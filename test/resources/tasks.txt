@@ -1,0 +1,56 @@
+Loading cache...done.
+Loaded 1209 entries from dependency cache.
+NOTE: Resolving any missing task queue dependencies
+
+Build Configuration:
+BB_VERSION        = "1.20.0"
+BUILD_SYS         = "x86_64-linux"
+NATIVELSBSTRING   = "Ubuntu-13.10"
+TARGET_SYS        = "i586-poky-linux"
+MACHINE           = "eurotech-isis"
+DISTRO            = "duma"
+DISTRO_VERSION    = "1.5.1"
+TUNE_FEATURES     = "m32 core2"
+TARGET_FPU        = ""
+meta              
+meta-yocto        
+meta-yocto-bsp    = "dora:c3cccbea7abd4af3d603b2be42b0c7291ff21946"
+meta-eurotech-isis = "master:d5b4a03852ace7991f22f93690fb7bee68b13801"
+meta-duma         = "master:fe778551c658c0377ae56994f6d6b5e0e636fdd9"
+
+NOTE: Preparing runqueue
+NOTE: Executing RunQueue Tasks
+NOTE: Running task 1 of 1 (ID: 0, /home/dam/Projects/FCS/04-Build/poky-dora-git/meta/recipes-core/busybox/busybox_1.21.1.bb, do_listtasks)
+NOTE: recipe busybox-1.21.1-r0: task do_listtasks: Started
+do_fetchall
+do_devshell
+do_install_ptest_base
+do_cleansstate
+do_build
+do_configure
+do_cleanall
+do_populate_lic
+do_populate_sysroot
+do_package_setscene
+do_checkuriall
+do_menuconfig
+do_populate_lic_setscene
+do_packagedata_setscene
+do_patch
+do_package_write_deb
+do_packagedata
+do_listtasks
+do_compile
+do_fetch
+do_checkuri
+do_configure_ptest_base
+do_clean
+do_compile_ptest_base
+do_package_write
+do_package
+do_unpack
+do_populate_sysroot_setscene
+do_package_write_deb_setscene
+do_install
+NOTE: recipe busybox-1.21.1-r0: task do_listtasks: Succeeded
+NOTE: Tasks Summary: Attempted 1 tasks of which 0 didn't need to be rerun and all succeeded.

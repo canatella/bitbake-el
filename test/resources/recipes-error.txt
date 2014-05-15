@@ -1,0 +1,1 @@
+ERROR: ParseError at /home/dam/Projects/FCS/04-Build/poky-dora-git/meta-duma/recipes-navigation/gpsd/gpsd_3.7.bb:50: unparsed line: '"'

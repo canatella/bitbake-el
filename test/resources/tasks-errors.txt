@@ -1,0 +1,5 @@
+Loading cache...done.
+Loaded 1209 entries from dependency cache.
+ERROR: Nothing PROVIDES 'foobar'
+
+Summary: There was 1 ERROR message shown, returning a non-zero exit code.
