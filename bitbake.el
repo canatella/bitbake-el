@@ -293,7 +293,7 @@ If FETCH is non-nil, invalidate cache and fetch the recipes list again."
 
 (defun bb-recipe-info (recipe)
   "Return the recipe list associated to RECIPE."
-  (or (assoc recipe (bb-recipes)) (user-error "Unknown recipe %s", recipe)))
+  (or (assoc recipe (bb-recipes)) (user-error "Unknown recipe %s" recipe)))
 
 (defun bb-recipe-names ()
   "Return the list of available recipe names."
