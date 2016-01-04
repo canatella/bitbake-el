@@ -5,7 +5,7 @@
 ;; Created: 2014-02-11
 ;; Keywords: convenience
 ;; Version: 0.1
-;; Package-Requires: ((emacs "24.1") (dash "2.6.0"))
+;; Package-Requires: ((emacs "24.1") (dash "2.6.0") (mmm-mode "0.5.4") (s "1.10.0"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -90,7 +90,7 @@
   :type '(string)
   :version "24.1")
 
-(defcustom wic-definition-file nil
+(defcustom bitbake-wic-definition-file nil
   "Path the wic definition file (wks file) to use for creating hdd image.
 
 If a relative path is used, it will be relative to the poky directory."
@@ -594,16 +594,16 @@ If FORCE is non-nil, force rebuild of image,"
 
 (defun wic-read-definition-file ()
   "Read path to a wic wks definition file."
-  (if wic-definition-file
-      (if (file-name-absolute-p wic-definition-file) wic-definition-file
-        (format "%s%s" bitbake-current-poky-directory wic-definition-file))
+  (if bitbake-wic-definition-file
+      (if (file-name-absolute-p bitbake-wic-definition-file) bitbake-wic-definition-file
+        (format "%s%s" bitbake-current-poky-directory bitbake-wic-definition-file))
     (read-file-name "Definition file: " bitbake-current-poky-directory nil t nil
                     (lambda (name)
                       (or (file-directory-p name)
                           (string-match "\\.wks\\'" name))))))
 
 ;;;###autoload
-(defun wic-create (wks image)
+(defun bitbake-wic-create (wks image)
   "Run wic WKS -e IMAGE."
   (interactive (list (wic-read-definition-file)
                      (bitbake-read-image)))
@@ -615,17 +615,17 @@ If FORCE is non-nil, force rebuild of image,"
         (deploy (bitbake-recipe-variable "DEPLOY_DIR_IMAGE" image))
         (last-prompt (process-mark (get-buffer-process (bitbake-buffer)))))
     (bitbake-command (wks rootfs staging-data kernel native-sysroot deploy)
-      (bitbake-shell-command (format "wic create %s -r %s -b %s -k %s -n %s -o %s"
-                                wks rootfs staging-data kernel native-sysroot deploy)))
+                     (bitbake-shell-command (format "wic create %s -r %s -b %s -k %s -n %s -o %s"
+                                                    wks rootfs staging-data kernel native-sysroot deploy)))
     (bitbake-command ()
-      (let (disk-image)
-        (with-current-buffer (bitbake-capture-buffer)
-          (goto-char (point-min))
-          (unless (re-search-forward "The new image(s) can be found here:\n *\\(.*\\)" nil t)
-            (error "Unable to execute wic command, see *bitbake* for details"))
-          (setq disk-image (match-string 1)))
-        (message "Disk image %s created" disk-image)
-        (setq bitbake-last-disk-image disk-image)))))
+                     (let (disk-image)
+                       (with-current-buffer (bitbake-capture-buffer)
+                         (goto-char (point-min))
+                         (unless (re-search-forward "The new image(s) can be found here:\n *\\(.*\\)" nil t)
+                           (error "Unable to execute wic command, see *bitbake* for details"))
+                         (setq disk-image (match-string 1)))
+                       (message "Disk image %s created" disk-image)
+                       (setq bitbake-last-disk-image disk-image)))))
 
 ;;;###autoload
 (defun bitbake-hdd-image (wks image)
@@ -633,7 +633,7 @@ If FORCE is non-nil, force rebuild of image,"
   (interactive (list (wic-read-definition-file)
                      (bitbake-read-image)))
   (bitbake-image image)
-  (wic-create wks image))
+  (bitbake-wic-create wks image))
 
 ;;;###autoload
 (defun bitbake-flash-image (wks image)
@@ -679,7 +679,7 @@ The hdd image is based on WKS definition file and bitbake IMAGE, see bitbake-hdd
        ["recompile, deploy" bitbake-recompile-deploy])
       ("Image"
        ["build"         bitbake-image]
-       ["wic"           wic-create]
+       ["wic"           bitbake-wic-create]
        ["hdd"           bitbake-hdd-image]
        ["flash"         bitbake-flash-image]))))
 
