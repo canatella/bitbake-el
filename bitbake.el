@@ -5,7 +5,7 @@
 ;; Created: 2014-02-11
 ;; Keywords: convenience
 ;; Version: 0.1
-;; Package-Requires: ((emacs "24.1") (dash "2.6.0"))
+;; Package-Requires: ((emacs "24.1") (dash "2.6.0") (mmm-mode "0.5.4") (s "1.10.0"))
 
 ;; This file is NOT part of GNU Emacs.
 
