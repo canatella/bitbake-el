@@ -208,6 +208,7 @@ Capture output in *bitbake-temp*."
     (setq bitbake-current-command command)
     (comint-redirect-send-command (format "echo '%s' && %s 2>&1" command command) (bitbake-capture-buffer) t t)))
 
+;;;###autoload
 (defun bitbake-start-server (poky-directory build-directory)
   "Start a bitbake server instance.
 
@@ -497,6 +498,7 @@ If FETCH is non-nil, invalidate cache and fetch the variables again."
   (setq bitbake-task-queue nil
         bitbake-current-task nil))
 
+;;;###autoload
 (defun bitbake-task (task recipe &optional force)
   "Run bitbake TASK on RECIPE.
 
@@ -509,32 +511,38 @@ If FORCE is non-nil, force running the task."
       (bitbake-recipe-taint-task recipe task))
     (bitbake-shell-command (format "bitbake %s %s -c %s" recipe (if force "-f" "") task))))
 
+;;;###autoload
 (defun bitbake-recipe (recipe)
   "Run bitbake RECIPE."
   (interactive (list (bitbake-read-recipe)))
   (bitbake-command (recipe)
     (bitbake-shell-command (format "bitbake %s " recipe))))
 
+;;;###autoload
 (defun bitbake-clean (recipe)
   "Run bitbake clean on RECIPE."
   (interactive (list (bitbake-read-recipe)))
   (bitbake-task "clean" recipe t))
 
+;;;###autoload
 (defun bitbake-compile (recipe)
   "Run bitbake compile on RECIPE."
   (interactive (list (bitbake-read-recipe)))
   (bitbake-task "compile" recipe t))
 
+;;;###autoload
 (defun bitbake-install (recipe)
   "Run bitbake install on RECIPE."
   (interactive (list (bitbake-read-recipe)))
   (bitbake-task "install" recipe t))
 
+;;;###autoload
 (defun bitbake-fetch (recipe)
   "Run bitbake install on RECIPE."
   (interactive (list (bitbake-read-recipe)))
   (bitbake-task "fetch" recipe t))
 
+;;;###autoload
 (defun bitbake-recompile (recipe)
   "Run bitbake clean compile and install on RECIPE."
   (interactive (list (bitbake-read-recipe)))
@@ -542,6 +550,7 @@ If FORCE is non-nil, force running the task."
   (bitbake-task "fetch" recipe)
   (bitbake-recipe recipe))
 
+;;;###autoload
 (defun bitbake-deploy (recipe)
   "Deploy artifacts of RECIPE to bitbake-deploy-ssh host."
   (interactive (list (bitbake-read-recipe)))
@@ -550,12 +559,14 @@ If FORCE is non-nil, force running the task."
       (message "Duma: deploying %s" recipe)
       (bitbake-shell-command (format "tar -C %s -cf - . | ssh %s tar -C / -xf -" image bitbake-deploy-ssh-host)))))
 
+;;;###autoload
 (defun bitbake-recompile-deploy (recipe)
   "Recompile RECIPE and deploy its artifacts."
   (interactive (list (bitbake-read-recipe)))
   (bitbake-recompile recipe)
   (bitbake-deploy recipe))
 
+;;;###autoload
 (defun bitbake-image (image &optional force)
   "Run bitbake IMAGE.
 
@@ -591,6 +602,7 @@ If FORCE is non-nil, force rebuild of image,"
                       (or (file-directory-p name)
                           (string-match "\\.wks\\'" name))))))
 
+;;;###autoload
 (defun wic-create (wks image)
   "Run wic WKS -e IMAGE."
   (interactive (list (wic-read-definition-file)
@@ -615,6 +627,7 @@ If FORCE is non-nil, force rebuild of image,"
         (message "Disk image %s created" disk-image)
         (setq bitbake-last-disk-image disk-image)))))
 
+;;;###autoload
 (defun bitbake-hdd-image (wks image)
   "Create an hdd image using wic based on WKS definition file and bitbake IMAGE."
   (interactive (list (wic-read-definition-file)
@@ -622,6 +635,7 @@ If FORCE is non-nil, force rebuild of image,"
   (bitbake-image image)
   (wic-create wks image))
 
+;;;###autoload
 (defun bitbake-flash-image (wks image)
   "Create an hdd image using wic and flash it on bitbake-flash-device.
 
@@ -635,6 +649,8 @@ The hdd image is based on WKS definition file and bitbake IMAGE, see bitbake-hdd
       (bitbake-shell-command (format "dd if=%s of=%s bs=32M" bitbake-last-disk-image bitbake-flash-device)))))
 
 ;;; Mode definition
+
+;;;###autoload
 (defvar bitbake-minor-mode-map nil "Keymap for bitbake-mode.")
 
 (setq bitbake-minor-mode-map nil)
