@@ -5,7 +5,7 @@ emacs. Its main features are:
 
 * interacting with the bitbake script so that you can run bitbake
   seamlessly from emacs. If your editing a recipe, recompiling is just
-  one `M-x bb-recompile` command away,
+  one `M-x bitbake-recompile` command away,
 
 * deploying recipes output directly to your target device over ssh for
   direct testing (if your image supports read-write mode),
@@ -21,22 +21,22 @@ emacs. Its main features are:
 ### Calling bitbake from emacs
 
 First you'll need to start bitbake as a server. Use `M-x
-bb-start-server` to do so. If you haven't setup the
-`bb-poky-directory` and `bb-build-directory` variables, emacs will
+bitbake-start-server` to do so. If you haven't setup the
+`bitbake-poky-directory` and `bitbake-build-directory` variables, emacs will
 prompt for your poky and build directory. You can permanently set them
 by running `M-x customize-group bitbake`.
 
 Now that the server is started, you can execute tasks for the current
-recipe or any recipe by running `M-x bb-task`. There are shortcut for
+recipe or any recipe by running `M-x bitbake-task`. There are shortcut for
 the most common task, see the BitBake menu in Bitbake minor mode.
 
 ### Deploying recipes
 
 If your target device supports ssh and writing to the root file system,
-you can use `M-x bb-deploy` to deploy a recipe on the device. It will
+you can use `M-x bitbake-deploy` to deploy a recipe on the device. It will
 use tar to create an archive of the files generated on the host and
 deploy them on the device. You should make sure that the recipe has
-already been build before or use the `M-x bb-recompile-deploy`
+already been build before or use the `M-x bitbake-recompile-deploy`
 command.
 
 ### Generating wic images
@@ -44,10 +44,10 @@ command.
 If you use wic to create images, you can use `M-x wic-create` to
 generate an image. It will prompt for the definition file the image
 name. You need to first build the Yocto image or use the command
-`M-x bb-hdd-image` which will first run `bitbake image` and then wic.
-If you set the custom variable `bb-flash-device` you'll be able
+`M-x bitbake-hdd-image` which will first run `bitbake image` and then wic.
+If you set the custom variable `bitbake-flash-device` you'll be able
 rebuild and put your wic image directly on the device with the command
-`M-x bb-flash-image`.
+`M-x bitbake-flash-image`.
 
 ### Bitbake global minor mode
 

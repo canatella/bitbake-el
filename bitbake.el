@@ -16,7 +16,7 @@
 ;;
 ;; - interacting with the bitbake script so that you can run bitbake
 ;;   seamlessly from emacs. If your editing a recipe, recompiling is
-;;   just one M-x bb-recompile command away,
+;;   just one M-x bitbake-recompile command away,
 ;; - deploying recipes output directly to your target device over ssh
 ;;   for direct testing (if your image supports read-write mode),
 ;; - generating wic images,
@@ -54,17 +54,17 @@
   "Run bitbake commands from emacs"
   :group 'processes)
 
-(defcustom bb-poky-directory "/opt/poky"
+(defcustom bitbake-poky-directory "/opt/poky"
   "The default yocto poky directory."
   :type '(directory)
   :group 'bitbake)
 
-(defcustom bb-build-directory ""
+(defcustom bitbake-build-directory ""
   "The default yocto build directory."
   :type '(directory)
   :group 'bitbake)
 
-(defcustom bb-server-host nil
+(defcustom bitbake-server-host nil
   "The name or IP address to use as host address of the server process.  If set, the server accepts remote connections; otherwise it is local."
   :type '(choice
           (string :tag "Name ro IP address")
@@ -72,9 +72,9 @@
   :group 'bitbake)
 
 ;;;###autoload
-(put 'bb-server-host 'risky-local-variable t)
+(put 'bitbake-server-host 'risky-local-variable t)
 
-(defcustom bb-server-port nil
+(defcustom bitbake-server-port nil
   "The port number that the server process should listen on.  A nil value means to use a random port number."
   :group 'bitbake
   :type '(choice
@@ -84,7 +84,7 @@
 ;;;###autoload
 (put 'server-port 'risky-local-variable t)
 
-(defcustom bb-deploy-ssh-host nil
+(defcustom bitbake-deploy-ssh-host nil
   "The host where to deploy package over ssh."
   :group 'bitbake
   :type '(string)
@@ -98,178 +98,178 @@ If a relative path is used, it will be relative to the poky directory."
   :type '(string)
   :version "24.1")
 
-(defcustom bb-flash-device nil
+(defcustom bitbake-flash-device nil
   "The device file where to dd the hdd image.
 
 If using a USB stick to boot the target platform, use a udev rule
 to create a link to that disk and use the link name
-here.  Calling bb-flash will copy the hdd image on the usb disk if present."
+here.  Calling bitbake-flash will copy the hdd image on the usb disk if present."
   :group 'bitbake
   :type '(string)
   :version "24.1")
 
 ;;; Local variables
-(defvar bb-current-server-host nil "The actual host name or IP address of the bitbake server instance.")
-(defvar bb-current-server-port nil "The actual port of the bitbake server instance.")
-(defvar bb-current-poky-directory nil "The actual directory holding bitbake binaries.")
-(defvar bb-current-build-directory nil "The actual build directory.")
-(defvar bb-recipes-cache '() "Cache of bitbake recipes.")
-(defvar bb-recipe-variables-cache '() "Cache of bitbake recipe variables.")
-(defvar bb-recipe-tasks-cache '() "Cache of bitbake recipe variables.")
-(defvar bb-recipe-history nil "History list of recipe names entered in the minibuffer.")
-(defvar bb-image-history nil "History list of image names entered in the minibuffer.")
-(defvar bb-task-history nil "History list of task names entered in the minibuffer.")
-(defvar bb-task-queue nil "List of task left to execute.")
-(defvar bb-current-task nil "The currently active task.")
-(defvar bb-current-command nil "The running command.")
-(defvar bb-last-disk-image nil "The last build disk image file.")
-(defvar bb-buffer-prompt "/////---bitbake$ " "The prompt used in the bitbake buffer.")
-(defvar bb-buffer-prompt-regexp (concat "^" (regexp-quote bb-buffer-prompt)) "A regexp matching the prompt")
+(defvar bitbake-current-server-host nil "The actual host name or IP address of the bitbake server instance.")
+(defvar bitbake-current-server-port nil "The actual port of the bitbake server instance.")
+(defvar bitbake-current-poky-directory nil "The actual directory holding bitbake binaries.")
+(defvar bitbake-current-build-directory nil "The actual build directory.")
+(defvar bitbake-recipes-cache '() "Cache of bitbake recipes.")
+(defvar bitbake-recipe-variables-cache '() "Cache of bitbake recipe variables.")
+(defvar bitbake-recipe-tasks-cache '() "Cache of bitbake recipe variables.")
+(defvar bitbake-recipe-history nil "History list of recipe names entered in the minibuffer.")
+(defvar bitbake-image-history nil "History list of image names entered in the minibuffer.")
+(defvar bitbake-task-history nil "History list of task names entered in the minibuffer.")
+(defvar bitbake-task-queue nil "List of task left to execute.")
+(defvar bitbake-current-task nil "The currently active task.")
+(defvar bitbake-current-command nil "The running command.")
+(defvar bitbake-last-disk-image nil "The last build disk image file.")
+(defvar bitbake-buffer-prompt "/////---bitbake$ " "The prompt used in the bitbake buffer.")
+(defvar bitbake-buffer-prompt-regexp (concat "^" (regexp-quote bitbake-buffer-prompt)) "A regexp matching the prompt")
 
-(make-variable-buffer-local 'bb-last-disk-image)
+(make-variable-buffer-local 'bitbake-last-disk-image)
 
 ;;; Minor mode functions
 
-(defun bb-read-poky-directory ()
+(defun bitbake-read-poky-directory ()
   "Read the poky directory."
-  (read-directory-name "Poky directory" bb-poky-directory bb-poky-directory))
+  (read-directory-name "Poky directory" bitbake-poky-directory bitbake-poky-directory))
 
-(defun bb-read-build-directory ()
+(defun bitbake-read-build-directory ()
   "Read the build directory."
-  (read-directory-name "Build directory" bb-build-directory bb-build-directory))
+  (read-directory-name "Build directory" bitbake-build-directory bitbake-build-directory))
 
-(defun bb-wait-for-prompt ()
-  "Wait for BB-BUFFER-PROMPT to appear in current buffer."
+(defun bitbake-wait-for-prompt ()
+  "Wait for BITBAKE-BUFFER-PROMPT to appear in current buffer."
   (let ((bol))
     (save-excursion
       (beginning-of-line)
       (setq bol (point)))
-    (while (not (search-backward bb-buffer-prompt bol t))
+    (while (not (search-backward bitbake-buffer-prompt bol t))
       (sleep-for 0 300))
     (goto-char (process-mark (get-buffer-process (current-buffer))))))
 
-(defun bb-buffer ()
+(defun bitbake-buffer ()
   "Fetch or create the bitbake buffer."
   (let ((buffer-name "*bitbake*")
-        (default-directory bb-build-directory))
+        (default-directory bitbake-build-directory))
     (or (get-buffer buffer-name)
         (progn
           (let ((buffer (shell buffer-name)))
             (with-current-buffer buffer
               (setq-local comint-move-point-for-output t)
-              (setq-local comint-prompt-regexp bb-buffer-prompt-regexp)
-              (process-send-string (current-buffer) (format "export PS1='%s' && cd %s\n" bb-buffer-prompt default-directory))
-              (bb-wait-for-prompt)
+              (setq-local comint-prompt-regexp bitbake-buffer-prompt-regexp)
+              (process-send-string (current-buffer) (format "export PS1='%s' && cd %s\n" bitbake-buffer-prompt default-directory))
+              (bitbake-wait-for-prompt)
               (comint-send-input nil t)
               (erase-buffer)
-              (bb-wait-for-prompt)
+              (bitbake-wait-for-prompt)
               buffer))))))
 
-(defun bb-capture-buffer ()
+(defun bitbake-capture-buffer ()
   "Fetch or create the bitbake capture buffer."
   (get-buffer-create "*bitbake-temp*"))
 
-(defun bb-add-path (path)
+(defun bitbake-add-path (path)
   "Add PATH to the current path."
   (let ((components (s-split ":" (or (getenv "PATH") "") t)))
     (unless (member path components)
       (setenv "PATH" (s-join ":" (-distinct (cons path components)))))))
 
-(defun bb-remove-path (path)
+(defun bitbake-remove-path (path)
   "Remove PATH from the current path."
   (let ((components (s-split ":" (or (getenv "PATH") "") t)))
     (when (member path components)
       (setenv "PATH" (s-join ":" (delete path components))))))
 
-(defun bb-setup-environment (poky-directory build-directory)
+(defun bitbake-setup-environment (poky-directory build-directory)
   "Add POKY-DIRECTORY to PATH environment variable and set BBPATH to BUILD-DIRECTORY."
   (setenv "BBPATH" build-directory)
   (setenv "BUILDDIR" build-directory)
-  (bb-add-path (format "%sscripts" poky-directory))
-  (bb-add-path (format "%sbitbake/bin" poky-directory))
+  (bitbake-add-path (format "%sscripts" poky-directory))
+  (bitbake-add-path (format "%sbitbake/bin" poky-directory))
   (message "Bitbake: updated path to %s" (getenv "PATH")))
 
-(defun bb-cleanup-environment (poky-directory)
+(defun bitbake-cleanup-environment (poky-directory)
   "Remove POKY-DIRECTORY from PATH environment variable and unset BBPATH."
   (setenv "BBPATH")
   (setenv "BUILDDIR")
-  (bb-remove-path (format "%sscripts" poky-directory))
-  (bb-remove-path (format "%sbitbake/bin" poky-directory)))
+  (bitbake-remove-path (format "%sscripts" poky-directory))
+  (bitbake-remove-path (format "%sbitbake/bin" poky-directory)))
 
-(defun bb-shell-command (command)
+(defun bitbake-shell-command (command)
   "Run shell COMMAND in bitbake buffer.
 
 Capture output in *bitbake-temp*."
-  (with-current-buffer (bb-capture-buffer)
-    (setq-local comint-prompt-regexp bb-buffer-prompt-regexp)
+  (with-current-buffer (bitbake-capture-buffer)
+    (setq-local comint-prompt-regexp bitbake-buffer-prompt-regexp)
     (erase-buffer))
-  (with-current-buffer (bb-buffer)
-    (setq-local comint-prompt-regexp bb-buffer-prompt-regexp)
-    (setq bb-current-command command)
-    (comint-redirect-send-command (format "echo '%s' && %s 2>&1" command command) (bb-capture-buffer) t t)))
+  (with-current-buffer (bitbake-buffer)
+    (setq-local comint-prompt-regexp bitbake-buffer-prompt-regexp)
+    (setq bitbake-current-command command)
+    (comint-redirect-send-command (format "echo '%s' && %s 2>&1" command command) (bitbake-capture-buffer) t t)))
 
-(defun bb-start-server (poky-directory build-directory)
+(defun bitbake-start-server (poky-directory build-directory)
   "Start a bitbake server instance.
 
 Start a bitbake server using POKY-DIRECTORY to find the bitbake
 binary and BUILD-DIRECTORY as the build directory."
   (interactive (let ((ask (consp current-prefix-arg)))
-                 (list (if (or ask (not bb-poky-directory))
-                           (bb-read-poky-directory)
-                         bb-poky-directory)
-                       (if (or ask (not bb-build-directory))
-                           (bb-read-build-directory)
-                         bb-build-directory))))
+                 (list (if (or ask (not bitbake-poky-directory))
+                           (bitbake-read-poky-directory)
+                         bitbake-poky-directory)
+                       (if (or ask (not bitbake-build-directory))
+                           (bitbake-read-build-directory)
+                         bitbake-build-directory))))
 
   ;; stop server if running
   (when (getenv "BBSERVER")
     (message "Stopping other instance of bitbake server")
-    (bb-stop-server))
+    (bitbake-stop-server))
 
   ;; cleanup caches
-  (setq bb-recipes-cache '()
-        bb-recipe-variables-cache '()
-        bb-recipe-tasks-cache '())
+  (setq bitbake-recipes-cache '()
+        bitbake-recipe-variables-cache '()
+        bitbake-recipe-tasks-cache '())
 
   ;; prepare environment
-  (setq bb-current-server-host (or bb-server-host "localhost")
-        bb-current-server-port (or bb-server-port (+ 1024 (random (- 65535 1024))))
-        bb-current-poky-directory (file-name-as-directory poky-directory)
-        bb-current-build-directory (file-name-as-directory build-directory))
-  (bb-setup-environment  bb-current-poky-directory bb-current-build-directory)
+  (setq bitbake-current-server-host (or bitbake-server-host "localhost")
+        bitbake-current-server-port (or bitbake-server-port (+ 1024 (random (- 65535 1024))))
+        bitbake-current-poky-directory (file-name-as-directory poky-directory)
+        bitbake-current-build-directory (file-name-as-directory build-directory))
+  (bitbake-setup-environment  bitbake-current-poky-directory bitbake-current-build-directory)
 
   ;; start the server
   (shell-command (format "cd /tmp && bitbake -B %s:%s --server-only -t xmlrpc"
-                         bb-current-server-host bb-current-server-port))
+                         bitbake-current-server-host bitbake-current-server-port))
 
-  (setenv "BBSERVER" (format "%s:%s" bb-current-server-host bb-current-server-port)))
+  (setenv "BBSERVER" (format "%s:%s" bitbake-current-server-host bitbake-current-server-port)))
 
-(defun bb-stop-server ()
+(defun bitbake-stop-server ()
   "Stop the bitbake server instance."
   (interactive)
   (unless (getenv "BBSERVER")
     (user-error "No bitbake server running"))
   (message "Bitbake: stopping server")
   (call-process-shell-command (format "bitbake --kill-server --remote-server=%s" (getenv "BBSERVER")))
-  (bb-cleanup-environment bb-current-poky-directory)
+  (bitbake-cleanup-environment bitbake-current-poky-directory)
   (message "Bitbake: server is down, cleaning up")
   (setenv "BBSERVER")
-  (setq bb-recipes-cache nil
-        bb-recipe-variables-cache nil
-        bb-recipe-tasks-cache nil
-        bb-current-server-host nil
-        bb-current-server-port nil
-        bb-current-poky-directory nil
-        bb-current-build-directory nil
-        bb-current-task nil
-        bb-task-queue nil)
+  (setq bitbake-recipes-cache nil
+        bitbake-recipe-variables-cache nil
+        bitbake-recipe-tasks-cache nil
+        bitbake-current-server-host nil
+        bitbake-current-server-port nil
+        bitbake-current-poky-directory nil
+        bitbake-current-build-directory nil
+        bitbake-current-task nil
+        bitbake-task-queue nil)
   (setq-local kill-buffer-query-functions '())
   (let* ((buffer (get-buffer "*bitbake*"))
          (process (get-buffer-process buffer)))
     (when process (kill-process))
     (when buffer (kill-buffer buffer))))
 
-(defun bb-parse-recipes (buffer)
+(defun bitbake-parse-recipes (buffer)
   "Parse recipes in a BUFFER given EVENT."
   (with-current-buffer buffer
     (goto-char (point-min))
@@ -278,74 +278,74 @@ binary and BUILD-DIRECTORY as the build directory."
           (setq recipes (cons (list (match-string 1) (match-string 2) (match-string 3) (match-string 4)) recipes)))
         recipes)))
 
-(defun bb-s-command (command message)
-  "Run COMMAND synchronously, sending output to bb-capture-buffer.
+(defun bitbake-s-command (command message)
+  "Run COMMAND synchronously, sending output to bitbake-capture-buffer.
 
 If COMMAND fails, raise user error with MESSAGE."
-  (unless (zerop (shell-command command (bb-capture-buffer)))
+  (unless (zerop (shell-command command (bitbake-capture-buffer)))
     (user-error "%s: %s" message
                 (if (getenv "BBSERVER")
                     (buffer-string) "server is not started"))))
 
-(defun bb-fetch-recipes ()
+(defun bitbake-fetch-recipes ()
   "Fetch the availables bitbake recipes for the POKY-DIRECTORY and the BUILD-DIRECTORY."
   (message "Bitbake: fetching recipes")
-  (with-current-buffer (bb-capture-buffer)
-    (bb-s-command "bitbake -s 2>&1" "Unable to fetch recipes")
-    (bb-parse-recipes (current-buffer))))
+  (with-current-buffer (bitbake-capture-buffer)
+    (bitbake-s-command "bitbake -s 2>&1" "Unable to fetch recipes")
+    (bitbake-parse-recipes (current-buffer))))
 
-(defun bb-recipes (&optional fetch)
+(defun bitbake-recipes (&optional fetch)
   "Return the bitbake recipes list.
 
 If FETCH is non-nil, invalidate cache and fetch the recipes list again."
-  (when (or fetch (not bb-recipes-cache))
-    (setq bb-recipes-cache (bb-fetch-recipes)))
-  bb-recipes-cache)
+  (when (or fetch (not bitbake-recipes-cache))
+    (setq bitbake-recipes-cache (bitbake-fetch-recipes)))
+  bitbake-recipes-cache)
 
-(defun bb-recipe-info (recipe)
+(defun bitbake-recipe-info (recipe)
   "Return the recipe list associated to RECIPE."
-  (or (assoc recipe (bb-recipes)) (user-error "Unknown recipe %s" recipe)))
+  (or (assoc recipe (bitbake-recipes)) (user-error "Unknown recipe %s" recipe)))
 
-(defun bb-recipe-names ()
+(defun bitbake-recipe-names ()
   "Return the list of available recipe names."
   (let (names)
-    (dolist (recipe (bb-recipes) names)
+    (dolist (recipe (bitbake-recipes) names)
       (setq names (cons (car recipe) names)))))
 
-(defun bb-buffer-recipe (&optional buffer)
+(defun bitbake-buffer-recipe (&optional buffer)
   "Return a recipe name for the current buffer or BUFFER if given."
   (setq buffer (or buffer (current-buffer)))
   (when (stringp (buffer-file-name buffer))
-    (let ((bb-directory (locate-dominating-file (buffer-file-name buffer)
+    (let ((bitbake-directory (locate-dominating-file (buffer-file-name buffer)
                                                 (lambda (dir)
                                                   (and (file-directory-p dir)
                                                        (directory-files dir t "\\.bb\\(append\\)?\\'"))))))
-      (when bb-directory
-        (let ((bb-file (car (directory-files bb-directory t "[^/_]+\\(_[^_]+\\)?\\.bb\\(append\\)?\\'"))))
+      (when bitbake-directory
+        (let ((bitbake-file (car (directory-files bitbake-directory t "[^/_]+\\(_[^_]+\\)?\\.bb\\(append\\)?\\'"))))
           (with-temp-buffer
             (goto-char (point-min))
-            (insert bb-file)
+            (insert bitbake-file)
             (goto-char (point-min))
             (if (re-search-forward "\\([^/_]+\\)\\(_[^_]+\\)?\\.bb\\(append\\)?\\'" nil t)
                 (match-string 1))))))))
 
-(defun bb-read-recipe ()
+(defun bitbake-read-recipe ()
   "Read a recipe name in the minibuffer, with completion."
-  (let ((default (or (bb-buffer-recipe) (car (last bb-recipe-history)))))
-    (completing-read "Recipe: " (bb-recipe-names) nil t default 'bb-recipe-history)))
+  (let ((default (or (bitbake-buffer-recipe) (car (last bitbake-recipe-history)))))
+    (completing-read "Recipe: " (bitbake-recipe-names) nil t default 'bitbake-recipe-history)))
 
-(defun bb-image-names ()
+(defun bitbake-image-names ()
   "Return the list of available image names."
   (let (names)
-    (dolist (recipe (bb-recipes) names)
+    (dolist (recipe (bitbake-recipes) names)
       (if (string-match ".*-image\\(-.*\\|$\\)" (car recipe))
           (setq names (cons (car recipe) names))))))
 
-(defun bb-read-image ()
+(defun bitbake-read-image ()
   "Read a image name in the minibuffer, with completion."
-  (completing-read "Image: " (bb-image-names) nil t (car (last bb-image-history)) 'bb-image-history))
+  (completing-read "Image: " (bitbake-image-names) nil t (car (last bitbake-image-history)) 'bitbake-image-history))
 
-(defun bb-parse-recipe-tasks (buffer)
+(defun bitbake-parse-recipe-tasks (buffer)
   "Parse the list of recipe tasks in BUFFER."
   (with-current-buffer buffer
     (goto-char (point-min))
@@ -356,28 +356,28 @@ If FETCH is non-nil, invalidate cache and fetch the recipes list again."
         (setq tasks (cons (match-string 1) tasks)))
       tasks)))
 
-(defun bb-fetch-recipe-tasks (recipe)
+(defun bitbake-fetch-recipe-tasks (recipe)
   "Fetch the list of bitbake tasks for RECIPE."
   (message "Bittbake: fetching recipe %s tasks" recipe)
-  (with-current-buffer (bb-capture-buffer)
-    (shell-command (format "bitbake %s -c listtasks" recipe) (bb-capture-buffer))
-    (bb-parse-recipe-tasks (current-buffer))))
+  (with-current-buffer (bitbake-capture-buffer)
+    (shell-command (format "bitbake %s -c listtasks" recipe) (bitbake-capture-buffer))
+    (bitbake-parse-recipe-tasks (current-buffer))))
 
-(defun bb-recipe-tasks (recipe &optional fetch)
+(defun bitbake-recipe-tasks (recipe &optional fetch)
   "Return the bitbake tasks for RECIPE.
 
 If FETCH is non-nil, invalidate cache and fetch the tasks again."
-  (when (or fetch (not (assoc recipe bb-recipe-tasks-cache)))
-    (assq-delete-all recipe bb-recipe-tasks-cache)
-    (setq bb-recipe-tasks-cache (cons (list recipe (bb-fetch-recipe-tasks recipe)) bb-recipe-tasks-cache)))
-  (cadr (assoc recipe bb-recipe-tasks-cache)))
+  (when (or fetch (not (assoc recipe bitbake-recipe-tasks-cache)))
+    (assq-delete-all recipe bitbake-recipe-tasks-cache)
+    (setq bitbake-recipe-tasks-cache (cons (list recipe (bitbake-fetch-recipe-tasks recipe)) bitbake-recipe-tasks-cache)))
+  (cadr (assoc recipe bitbake-recipe-tasks-cache)))
 
-(defun bb-read-tasks (recipe)
+(defun bitbake-read-tasks (recipe)
   "Read a task name in the minibuffer, with completion for task RECIPE."
-  (let ((tasks (bb-recipe-tasks recipe)))
-    (completing-read "Task: " tasks nil t (car (last bb-task-history)) 'bb-task-history)))
+  (let ((tasks (bitbake-recipe-tasks recipe)))
+    (completing-read "Task: " tasks nil t (car (last bitbake-task-history)) 'bitbake-task-history)))
 
-(defun bb-parse-recipe-variables (buffer)
+(defun bitbake-parse-recipe-variables (buffer)
   "Parse bitbake variables BUFFER."
   (with-current-buffer buffer
     (goto-char (point-min))
@@ -395,29 +395,29 @@ If FETCH is non-nil, invalidate cache and fetch the tasks again."
           (setq variables (cons (cons name value) variables))))
       variables)))
 
-(defun bb-fetch-recipe-variables (recipe)
+(defun bitbake-fetch-recipe-variables (recipe)
   "Fetch bitbake variables for RECIPE."
     (message "Bittbake: fetching recipe %s variables" recipe)
   (with-temp-buffer
     (shell-command (format "bitbake -e %s 2>&1" recipe) (current-buffer))
-    (bb-parse-recipe-variables (current-buffer))))
+    (bitbake-parse-recipe-variables (current-buffer))))
 
-(defun bb-recipe-variables (recipe &optional fetch)
+(defun bitbake-recipe-variables (recipe &optional fetch)
   "Return the bitbake variables for RECIPE.
 
 If FETCH is non-nil, invalidate cache and fetch the variables again."
-  (when (or fetch (not (assoc recipe bb-recipe-variables-cache)))
-    (assq-delete-all recipe bb-recipe-variables-cache)
-    (setq bb-recipe-variables-cache (cons (list recipe (bb-fetch-recipe-variables recipe)) bb-recipe-variables-cache)))
-  (cadr (assoc recipe bb-recipe-variables-cache)))
+  (when (or fetch (not (assoc recipe bitbake-recipe-variables-cache)))
+    (assq-delete-all recipe bitbake-recipe-variables-cache)
+    (setq bitbake-recipe-variables-cache (cons (list recipe (bitbake-fetch-recipe-variables recipe)) bitbake-recipe-variables-cache)))
+  (cadr (assoc recipe bitbake-recipe-variables-cache)))
 
-(defun bb-recipe-variable (variable recipe &optional fetch)
+(defun bitbake-recipe-variable (variable recipe &optional fetch)
   "Return the value of VARIABLE for RECIPE.
 
 If FETCH is non-nil, invalidate cache and fetch the variables again."
-  (cdr (assoc variable (bb-recipe-variables recipe fetch))))
+  (cdr (assoc variable (bitbake-recipe-variables recipe fetch))))
 
-(defun bb-uuid ()
+(defun bitbake-uuid ()
   "Generate a random UUID."
   (format "%04x%04x-%04x-%04x-%04x-%06x%06x"
            (random (expt 16 4))
@@ -428,165 +428,165 @@ If FETCH is non-nil, invalidate cache and fetch the variables again."
            (random (expt 16 6))
            (random (expt 16 6))))
 
-(defun bb-recipe-taint-task (recipe task)
+(defun bitbake-recipe-taint-task (recipe task)
   "Taint RECIPE TASK as a workarround for bitbake -f not working in server mode."
-  (let ((taint-file-name (format "%s.do_%s.taint" (bb-recipe-variable "STAMP" recipe) task)))
+  (let ((taint-file-name (format "%s.do_%s.taint" (bitbake-recipe-variable "STAMP" recipe) task)))
     (with-temp-file taint-file-name
-      (insert (bb-uuid)))))
+      (insert (bitbake-uuid)))))
 
-(defun bb-schedule-queue ()
+(defun bitbake-schedule-queue ()
   "Schedule the next task in queue."
-  (when bb-current-command
-    (message "Bitbake: command \"%s\" finished" bb-current-command)
-    (with-current-buffer (bb-capture-buffer)
+  (when bitbake-current-command
+    (message "Bitbake: command \"%s\" finished" bitbake-current-command)
+    (with-current-buffer (bitbake-capture-buffer)
       (goto-char (point-min))
       (while (re-search-forward "^[| ]*ERROR: \\([^(]+\\)\\( (log file is located at \\(.*\\))\\)?$" nil t)
         (message "Bitbake: error - %s" (match-string 1))
         (let ((log-file (match-string 3)))
           (if log-file
               (find-file log-file)))))
-    (setq bb-current-command nil))
+    (setq bitbake-current-command nil))
   (message "Bitbake: scheduling queue")
-  (with-current-buffer (bb-buffer)
-    (let ((task (car bb-task-queue)))
+  (with-current-buffer (bitbake-buffer)
+    (let ((task (car bitbake-task-queue)))
       (when task
-        (setq bb-task-queue (cdr bb-task-queue)
-              bb-current-task task)
-        (add-hook 'comint-redirect-hook 'bb-schedule-queue nil t)
+        (setq bitbake-task-queue (cdr bitbake-task-queue)
+              bitbake-current-task task)
+        (add-hook 'comint-redirect-hook 'bitbake-schedule-queue nil t)
         (message "Bitbake: running task")
         (run-at-time 0 nil task))
       (unless task
         (message "Bitbake: task queue empty")
-        (setq bb-current-task nil)
-        (remove-hook 'comint-redirect-hook 'bb-schedule-queue t)
+        (setq bitbake-current-task nil)
+        (remove-hook 'comint-redirect-hook 'bitbake-schedule-queue t)
         ))))
 
-(defmacro bb-command (varlist &rest body)
+(defmacro bitbake-command (varlist &rest body)
   "Create a command with VARLIST to execute BODY and put it in the queue."
   (declare (indent 1))
-  `(bb-queue-command
+  `(bitbake-queue-command
     (lexical-let ,(mapcar (lambda (var)
                             (list var var))
                           varlist)
       (lambda ()
-        (with-current-buffer (bb-buffer)
+        (with-current-buffer (bitbake-buffer)
           (condition-case err
               (progn
-                (setq bb-current-command nil)
+                (setq bitbake-current-command nil)
                 (progn ,@body)
-                (unless bb-current-command
-                    (bb-schedule-queue)))
-            (error (bb-reset-queue)
+                (unless bitbake-current-command
+                    (bitbake-schedule-queue)))
+            (error (bitbake-reset-queue)
                    (message "Bitbake: error - %s." (error-message-string err)))))))))
 
-(defun bb-run-queue ()
+(defun bitbake-run-queue ()
   "Maybe run next process in queue if no other task is active."
-  (unless bb-current-task
+  (unless bitbake-current-task
     (message "Bitbake: no running tasks, scheduling queue")
-    (bb-schedule-queue)))
+    (bitbake-schedule-queue)))
 
-(defun bb-queue-command (task)
+(defun bitbake-queue-command (task)
   "Queue TASK for running in bitbake buffer."
   (message "Bitbake: queuing command")
-  (setq bb-task-queue (append bb-task-queue (list task)))
-  (bb-run-queue))
+  (setq bitbake-task-queue (append bitbake-task-queue (list task)))
+  (bitbake-run-queue))
 
-(defun bb-reset-queue ()
+(defun bitbake-reset-queue ()
   "Reset task queue."
   (interactive)
-  (setq bb-task-queue nil
-        bb-current-task nil))
+  (setq bitbake-task-queue nil
+        bitbake-current-task nil))
 
-(defun bb-task (task recipe &optional force)
+(defun bitbake-task (task recipe &optional force)
   "Run bitbake TASK on RECIPE.
 
 If FORCE is non-nil, force running the task."
-  (interactive (let* ((recipe (bb-read-recipe))
-                      (task (bb-read-tasks recipe)))
+  (interactive (let* ((recipe (bitbake-read-recipe))
+                      (task (bitbake-read-tasks recipe)))
                  (list task recipe (consp current-prefix-arg))))
-  (bb-command (recipe task force)
+  (bitbake-command (recipe task force)
     (when force
-      (bb-recipe-taint-task recipe task))
-    (bb-shell-command (format "bitbake %s %s -c %s" recipe (if force "-f" "") task))))
+      (bitbake-recipe-taint-task recipe task))
+    (bitbake-shell-command (format "bitbake %s %s -c %s" recipe (if force "-f" "") task))))
 
-(defun bb-recipe (recipe)
+(defun bitbake-recipe (recipe)
   "Run bitbake RECIPE."
-  (interactive (list (bb-read-recipe)))
-  (bb-command (recipe)
-    (bb-shell-command (format "bitbake %s " recipe))))
+  (interactive (list (bitbake-read-recipe)))
+  (bitbake-command (recipe)
+    (bitbake-shell-command (format "bitbake %s " recipe))))
 
-(defun bb-clean (recipe)
+(defun bitbake-clean (recipe)
   "Run bitbake clean on RECIPE."
-  (interactive (list (bb-read-recipe)))
-  (bb-task "clean" recipe t))
+  (interactive (list (bitbake-read-recipe)))
+  (bitbake-task "clean" recipe t))
 
-(defun bb-compile (recipe)
+(defun bitbake-compile (recipe)
   "Run bitbake compile on RECIPE."
-  (interactive (list (bb-read-recipe)))
-  (bb-task "compile" recipe t))
+  (interactive (list (bitbake-read-recipe)))
+  (bitbake-task "compile" recipe t))
 
-(defun bb-install (recipe)
+(defun bitbake-install (recipe)
   "Run bitbake install on RECIPE."
-  (interactive (list (bb-read-recipe)))
-  (bb-task "install" recipe t))
+  (interactive (list (bitbake-read-recipe)))
+  (bitbake-task "install" recipe t))
 
-(defun bb-fetch (recipe)
+(defun bitbake-fetch (recipe)
   "Run bitbake install on RECIPE."
-  (interactive (list (bb-read-recipe)))
-  (bb-task "fetch" recipe t))
+  (interactive (list (bitbake-read-recipe)))
+  (bitbake-task "fetch" recipe t))
 
-(defun bb-recompile (recipe)
+(defun bitbake-recompile (recipe)
   "Run bitbake clean compile and install on RECIPE."
-  (interactive (list (bb-read-recipe)))
-  (bb-task "cleanall" recipe)
-  (bb-task "fetch" recipe)
-  (bb-recipe recipe))
+  (interactive (list (bitbake-read-recipe)))
+  (bitbake-task "cleanall" recipe)
+  (bitbake-task "fetch" recipe)
+  (bitbake-recipe recipe))
 
-(defun bb-deploy (recipe)
-  "Deploy artifacts of RECIPE to bb-deploy-ssh host."
-  (interactive (list (bb-read-recipe)))
-  (bb-command (recipe)
-    (let ((image (bb-recipe-variable "D" recipe)))
+(defun bitbake-deploy (recipe)
+  "Deploy artifacts of RECIPE to bitbake-deploy-ssh host."
+  (interactive (list (bitbake-read-recipe)))
+  (bitbake-command (recipe)
+    (let ((image (bitbake-recipe-variable "D" recipe)))
       (message "Duma: deploying %s" recipe)
-      (bb-shell-command (format "tar -C %s -cf - . | ssh %s tar -C / -xf -" image bb-deploy-ssh-host)))))
+      (bitbake-shell-command (format "tar -C %s -cf - . | ssh %s tar -C / -xf -" image bitbake-deploy-ssh-host)))))
 
-(defun bb-recompile-deploy (recipe)
+(defun bitbake-recompile-deploy (recipe)
   "Recompile RECIPE and deploy its artifacts."
-  (interactive (list (bb-read-recipe)))
-  (bb-recompile recipe)
-  (bb-deploy recipe))
+  (interactive (list (bitbake-read-recipe)))
+  (bitbake-recompile recipe)
+  (bitbake-deploy recipe))
 
-(defun bb-image (image &optional force)
+(defun bitbake-image (image &optional force)
   "Run bitbake IMAGE.
 
 If FORCE is non-nil, force rebuild of image,"
-  (interactive (list (bb-read-image) (consp current-prefix-arg)))
-  (bb-command (image force)
+  (interactive (list (bitbake-read-image) (consp current-prefix-arg)))
+  (bitbake-command (image force)
     (when force
-      (bb-recipe-taint-task image "rootfs"))
-    (bb-shell-command (format "bitbake %s" image))))
+      (bitbake-recipe-taint-task image "rootfs"))
+    (bitbake-shell-command (format "bitbake %s" image))))
 
-(defun bb-workdir (recipe)
+(defun bitbake-workdir (recipe)
   "Open RECIPE workdir."
-  (interactive (list (bb-read-recipe)))
-  (find-file (bb-recipe-variable "WORKDIR" recipe)))
+  (interactive (list (bitbake-read-recipe)))
+  (find-file (bitbake-recipe-variable "WORKDIR" recipe)))
 
-(defun bb-file (recipe)
+(defun bitbake-file (recipe)
   "Open RECIPE bitbake file."
-  (interactive (list (bb-read-recipe)))
-  (find-file (bb-recipe-variable "FILE" recipe)))
+  (interactive (list (bitbake-read-recipe)))
+  (find-file (bitbake-recipe-variable "FILE" recipe)))
 
-(defun bb-rootfs (image)
+(defun bitbake-rootfs (image)
   "Open IMAGE root fs."
-  (interactive (list (bb-read-image)))
-  (find-file (bb-recipe-variable "IMAGE_ROOTFS" image)))
+  (interactive (list (bitbake-read-image)))
+  (find-file (bitbake-recipe-variable "IMAGE_ROOTFS" image)))
 
 (defun wic-read-definition-file ()
   "Read path to a wic wks definition file."
   (if wic-definition-file
       (if (file-name-absolute-p wic-definition-file) wic-definition-file
-        (format "%s%s" bb-current-poky-directory wic-definition-file))
-    (read-file-name "Definition file: " bb-current-poky-directory nil t nil
+        (format "%s%s" bitbake-current-poky-directory wic-definition-file))
+    (read-file-name "Definition file: " bitbake-current-poky-directory nil t nil
                     (lambda (name)
                       (or (file-directory-p name)
                           (string-match "\\.wks\\'" name))))))
@@ -594,45 +594,45 @@ If FORCE is non-nil, force rebuild of image,"
 (defun wic-create (wks image)
   "Run wic WKS -e IMAGE."
   (interactive (list (wic-read-definition-file)
-                     (bb-read-image)))
-  (let ((rootfs (bb-recipe-variable "IMAGE_ROOTFS" image))
-        (kernel (bb-recipe-variable "STAGING_KERNEL_DIR" image))
-        (hdddir (bb-recipe-variable "HDDDIR" image))
-        (staging-data (bb-recipe-variable "STAGING_DATADIR" image))
-        (native-sysroot (bb-recipe-variable "STAGING_DIR_NATIVE" image))
-        (deploy (bb-recipe-variable "DEPLOY_DIR_IMAGE" image))
-        (last-prompt (process-mark (get-buffer-process (bb-buffer)))))
-    (bb-command (wks rootfs staging-data kernel native-sysroot deploy)
-      (bb-shell-command (format "wic create %s -r %s -b %s -k %s -n %s -o %s"
+                     (bitbake-read-image)))
+  (let ((rootfs (bitbake-recipe-variable "IMAGE_ROOTFS" image))
+        (kernel (bitbake-recipe-variable "STAGING_KERNEL_DIR" image))
+        (hdddir (bitbake-recipe-variable "HDDDIR" image))
+        (staging-data (bitbake-recipe-variable "STAGING_DATADIR" image))
+        (native-sysroot (bitbake-recipe-variable "STAGING_DIR_NATIVE" image))
+        (deploy (bitbake-recipe-variable "DEPLOY_DIR_IMAGE" image))
+        (last-prompt (process-mark (get-buffer-process (bitbake-buffer)))))
+    (bitbake-command (wks rootfs staging-data kernel native-sysroot deploy)
+      (bitbake-shell-command (format "wic create %s -r %s -b %s -k %s -n %s -o %s"
                                 wks rootfs staging-data kernel native-sysroot deploy)))
-    (bb-command ()
+    (bitbake-command ()
       (let (disk-image)
-        (with-current-buffer (bb-capture-buffer)
+        (with-current-buffer (bitbake-capture-buffer)
           (goto-char (point-min))
           (unless (re-search-forward "The new image(s) can be found here:\n *\\(.*\\)" nil t)
             (error "Unable to execute wic command, see *bitbake* for details"))
           (setq disk-image (match-string 1)))
         (message "Disk image %s created" disk-image)
-        (setq bb-last-disk-image disk-image)))))
+        (setq bitbake-last-disk-image disk-image)))))
 
-(defun bb-hdd-image (wks image)
+(defun bitbake-hdd-image (wks image)
   "Create an hdd image using wic based on WKS definition file and bitbake IMAGE."
   (interactive (list (wic-read-definition-file)
-                     (bb-read-image)))
-  (bb-image image)
+                     (bitbake-read-image)))
+  (bitbake-image image)
   (wic-create wks image))
 
-(defun bb-flash-image (wks image)
-  "Create an hdd image using wic and flash it on bb-flash-device.
+(defun bitbake-flash-image (wks image)
+  "Create an hdd image using wic and flash it on bitbake-flash-device.
 
-The hdd image is based on WKS definition file and bitbake IMAGE, see bb-hdd-image."
+The hdd image is based on WKS definition file and bitbake IMAGE, see bitbake-hdd-image."
   (interactive (list (wic-read-definition-file)
-                     (bb-read-image)))
-  (bb-hdd-image wks image)
-  (bb-command ()
-    (when (and (file-exists-p bb-flash-device) bb-last-disk-image)
-      (message "Bitbake: copy image to %s" bb-flash-device)
-      (bb-shell-command (format "dd if=%s of=%s bs=32M" bb-last-disk-image bb-flash-device)))))
+                     (bitbake-read-image)))
+  (bitbake-hdd-image wks image)
+  (bitbake-command ()
+    (when (and (file-exists-p bitbake-flash-device) bitbake-last-disk-image)
+      (message "Bitbake: copy image to %s" bitbake-flash-device)
+      (bitbake-shell-command (format "dd if=%s of=%s bs=32M" bitbake-last-disk-image bitbake-flash-device)))))
 
 ;;; Mode definition
 (defvar bitbake-minor-mode-map nil "Keymap for bitbake-mode.")
@@ -640,32 +640,32 @@ The hdd image is based on WKS definition file and bitbake IMAGE, see bb-hdd-imag
 (setq bitbake-minor-mode-map nil)
 (when (not bitbake-minor-mode-map)
   (setq bitbake-minor-mode-map (make-sparse-keymap))
-  (define-key bitbake-minor-mode-map (kbd "C-c C-/ s") 'bb-start-server)
-  (define-key bitbake-minor-mode-map (kbd "C-c C-/ k") 'bb-stop-server)
-  (define-key bitbake-minor-mode-map (kbd "C-c C-/ r") 'bb-recompile)
-  (define-key bitbake-minor-mode-map (kbd "C-c C-/ d") 'bb-recompile-deploy)
-  (define-key bitbake-minor-mode-map (kbd "C-c C-/ f") 'bb-flash-image)
-  (define-key bitbake-minor-mode-map (kbd "C-c C-/ t") 'bb-task)
+  (define-key bitbake-minor-mode-map (kbd "C-c C-/ s") 'bitbake-start-server)
+  (define-key bitbake-minor-mode-map (kbd "C-c C-/ k") 'bitbake-stop-server)
+  (define-key bitbake-minor-mode-map (kbd "C-c C-/ r") 'bitbake-recompile)
+  (define-key bitbake-minor-mode-map (kbd "C-c C-/ d") 'bitbake-recompile-deploy)
+  (define-key bitbake-minor-mode-map (kbd "C-c C-/ f") 'bitbake-flash-image)
+  (define-key bitbake-minor-mode-map (kbd "C-c C-/ t") 'bitbake-task)
   (easy-menu-define bitbake-menu bitbake-minor-mode-map
     "BitBake"
     '("BitBake"
-      ["Start server"   bb-start-server]
-      ["Stop server"    bb-stop-server ]
-      ["Recipe"         bb-recipe]
-      ["Task"           bb-task]
+      ["Start server"   bitbake-start-server]
+      ["Stop server"    bitbake-stop-server ]
+      ["Recipe"         bitbake-recipe]
+      ["Task"           bitbake-task]
       ("Tasks"
-       ["clean"         bb-clean]
-       ["compile"       bb-compile]
-       ["install"       bb-install]
-       ["fetch"         bb-fetch]
-       ["recompile"     bb-recompile]
-       ["deploy"        bb-deploy]
-       ["recompile, deploy" bb-recompile-deploy])
+       ["clean"         bitbake-clean]
+       ["compile"       bitbake-compile]
+       ["install"       bitbake-install]
+       ["fetch"         bitbake-fetch]
+       ["recompile"     bitbake-recompile]
+       ["deploy"        bitbake-deploy]
+       ["recompile, deploy" bitbake-recompile-deploy])
       ("Image"
-       ["build"         bb-image]
+       ["build"         bitbake-image]
        ["wic"           wic-create]
-       ["hdd"           bb-hdd-image]
-       ["flash"         bb-flash-image]))))
+       ["hdd"           bitbake-hdd-image]
+       ["flash"         bitbake-flash-image]))))
 
 (define-minor-mode bitbake-minor-mode
   "Toggle Bitake mode.
@@ -680,7 +680,7 @@ the mode, `toggle' toggles the state."
   :group 'bitbake
   :global t)
 
-(defun bb-comment-dwim (arg)
+(defun bitbake-comment-dwim (arg)
   "Comment or uncomment current line or region in a smart way.
 
 For detail, see `comment-dwim'."
@@ -696,13 +696,13 @@ For detail, see `comment-dwim'."
     table)
   "Syntax table used in `bitbake-mode'.")
 
-(defvar bb-font-lock-defaults
+(defvar bitbake-font-lock-defaults
   `((
      ("include\\|require\\|inherit\\|python\\|addtask" . font-lock-keyword-face)
      ("do_\\(\\s_\\|\\sw\\)+" . font-lock-function-name-face)
      )))
 
-(defun bb-indent-line ()
+(defun bitbake-indent-line ()
   "Indent current line as bitbake code."
   (interactive)
   (beginning-of-line)
@@ -713,10 +713,10 @@ For detail, see `comment-dwim'."
 (define-derived-mode bitbake-mode fundamental-mode
   "A mode for editing bitbake recipe files."
   :syntax-table bitbake-syntax-table
-  (setq font-lock-defaults bb-font-lock-defaults)
+  (setq font-lock-defaults bitbake-font-lock-defaults)
   (setq mode-name "BitBake")
-  (set (make-local-variable 'indent-line-function) 'bb-indent-line)
-  (define-key bitbake-mode-map [remap comment-dwim] 'bb-comment-dwim))
+  (set (make-local-variable 'indent-line-function) 'bitbake-indent-line)
+  (define-key bitbake-mode-map [remap comment-dwim] 'bitbake-comment-dwim))
 
 (mmm-add-classes
  '((bitbake-shell
