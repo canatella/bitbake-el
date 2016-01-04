@@ -41,7 +41,7 @@ command.
 
 ### Generating wic images
 
-If you use wic to create images, you can use `M-x wic-create` to
+If you use wic to create images, you can use `M-x bitbake-wic-create` to
 generate an image. It will prompt for the definition file the image
 name. You need to first build the Yocto image or use the command
 `M-x bitbake-hdd-image` which will first run `bitbake image` and then wic.
