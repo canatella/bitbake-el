@@ -16,6 +16,11 @@ emacs. Its main features are:
 
 * an mmm based mode to edit bitbake recipes.
 
+## Installing
+
+This package is available on Melpa:
+[![MELPA](http://melpa.org/packages/bitbake-badge.svg)](http://melpa.org/#/bitbake)
+
 ## Usage
 
 ### Calling bitbake from emacs
