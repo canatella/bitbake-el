@@ -67,6 +67,14 @@ Development is done on
 [GitHub](https://github.com/canatella/bitbake-el). Any bugs or patches
 are welcome.
 
+## Contributors
+
+Thanks to
+
+- Lee Yen-Chin for helping me updating the code to support Melpa and
+  publishing it,
+- Syohei Yoshida for small fixes.
+
 ## License
 
 This emacs extension is distributed under the terms of the GPLv3. See
