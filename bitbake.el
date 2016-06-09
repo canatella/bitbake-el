@@ -1,7 +1,7 @@
 ;;; bitbake.el --- Running bitbake from emacs
 
 ;; Author: Damien Merenne
-;; URL: https://github.com/canatella/bitbake-mode
+;; URL: https://github.com/canatella/bitbake-el
 ;; Created: 2014-02-11
 ;; Keywords: convenience
 ;; Version: 0.1
