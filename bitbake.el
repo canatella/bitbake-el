@@ -726,6 +726,7 @@ For detail, see `comment-dwim'."
       (indent-line-to default-tab-width)
     (indent-line-to 0)))
 
+;;;###autoload
 (define-derived-mode bitbake-mode fundamental-mode
   "A mode for editing bitbake recipe files."
   :syntax-table bitbake-syntax-table
