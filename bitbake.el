@@ -1,7 +1,7 @@
 ;;; bitbake.el --- Running bitbake from emacs
 
 ;; Author: Damien Merenne
-;; URL: https://github.com/canatella/bitbake-mode
+;; URL: https://github.com/canatella/bitbake-el
 ;; Created: 2014-02-11
 ;; Keywords: convenience
 ;; Version: 0.1
@@ -726,6 +726,7 @@ For detail, see `comment-dwim'."
       (indent-line-to default-tab-width)
     (indent-line-to 0)))
 
+;;;###autoload
 (define-derived-mode bitbake-mode fundamental-mode
   "A mode for editing bitbake recipe files."
   :syntax-table bitbake-syntax-table
@@ -750,8 +751,8 @@ For detail, see `comment-dwim'."
 
 (mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\'" 'bitbake-shell)
 (mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\'" 'bitbake-python)
-(setq auto-mode-alist
-         (cons '("\\.bb\\(append\\)?\\'" . bitbake-mode) auto-mode-alist))
+(add-to-list 'auto-mode-alist
+             '("\\.bb\\(append\\|class\\)?\\'" . bitbake-mode))
 
 (provide 'bitbake)
 
