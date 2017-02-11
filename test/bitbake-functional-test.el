@@ -1,4 +1,4 @@
-;;; bitbake-test.el --- Bitbake mode functional test suite  -*- lexical-binding: t; -*-
+;;; bitbake-functional-test.el --- Bitbake mode functional test suite  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2014  Damien Merenne
 
@@ -81,11 +81,11 @@
   (with-server
    (should (assoc "FILES_busybox" (bb-fetch-recipe-variables "busybox")))))
 
-(provide 'functional-test)
+(provide 'bitbake-functional-test)
 
 ;; Local Variables:
 ;; coding: utf-8
 ;; indent-tabs-mode: nil
 ;; End:
 
-;;; functional-test.el ends here
+;;; bitbake-functional-test.el ends here
