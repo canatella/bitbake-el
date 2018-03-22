@@ -84,3 +84,5 @@ Thanks to
 
 This emacs extension is distributed under the terms of the GPLv3. See
 COPYING file for details.
+
+[![Build Status](https://travis-ci.org/canatella/bitbake-el.svg?branch=master)](https://travis-ci.org/canatella/bitbake-el)
