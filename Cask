@@ -1,3 +1,4 @@
+(source gnu)
 (source melpa)
 
 (package "bitbake" "0.1" "Bitbake integration.")
