@@ -240,7 +240,7 @@ binary and BUILD-DIRECTORY as the build directory."
   (bitbake-setup-environment  bitbake-current-poky-directory bitbake-current-build-directory)
 
   ;; start the server
-  (shell-command (format "cd /tmp && bitbake -B %s:%s --server-only -t xmlrpc"
+  (shell-command (format "cd /tmp && bitbake -B %s:%s --server-only"
                          bitbake-current-server-host bitbake-current-server-port))
 
   (setenv "BBSERVER" (format "%s:%s" bitbake-current-server-host bitbake-current-server-port)))
