@@ -714,8 +714,12 @@ For detail, see `comment-dwim'."
 
 (defvar bitbake-font-lock-defaults
   `((
-     ("include\\|require\\|inherit\\|python\\|addtask" . font-lock-keyword-face)
-     ("do_\\(\\s_\\|\\sw\\)+" . font-lock-function-name-face)
+     ;; fakeroot python do_foo() {
+     ("include\\|require\\|inherit\\|python\\|addtask\\|export\\|fakeroot" . font-lock-keyword-face)
+     ;; do_install_append() {
+     ("^\\(fakeroot *\\)?\\(python *\\)?\\([a-zA-Z0-9_${}-]+\\) *( *) *{" 3 font-lock-function-name-face)
+     ;; do_deploy[depends] ??=
+     ("^\\(export *\\)?\\([a-zA-Z0-9_${}-]+\\(\\[[a-zA-Z0-9_-]+\\]\\)?\\) *\\(=\\|\\?=\\|\\?\\?=\\|:=\\|+=\\|=+\\|.=\\|=.\\)" 2 font-lock-variable-name-face)
      )))
 
 (defun bitbake-indent-line ()
@@ -740,17 +744,17 @@ For detail, see `comment-dwim'."
     :submode shell-script-mode
     :delimiter-mode nil
     :case-fold-search nil
-    :front "do_\\(\\s_\\|\\sw\\)+(\\s-*)\\s-*{"
-    :back "}")
+    :front "^\\(fakeroot *\\)?\\([a-zA-Z0-9_${}-]+\\) *( *) *{"
+    :back "^}")
    (bitbake-python
     :submode python-mode
     :delimiter-mode nil
     :case-fold-search nil
-    :front "python\\s-+\\(\\s_\\|\\sw\\)+\\s-*{"
-    :back "}")))
+    :front "^\\(fakeroot *\\)?python *\\([a-zA-Z0-9_${}-]+\\) *( *) *{"
+    :back "^}")))
 
-(mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\'" 'bitbake-shell)
-(mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\'" 'bitbake-python)
+(mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\(append\\|class\\)\\'" 'bitbake-shell)
+(mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\(append\\|class\\)\\'" 'bitbake-python)
 (add-to-list 'auto-mode-alist
              '("\\.bb\\(append\\|class\\)?\\'" . bitbake-mode))
 
