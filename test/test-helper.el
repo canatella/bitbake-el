@@ -55,8 +55,8 @@
   "Evaluate BODY in a clean build environment for each boky branch."
   (declare (indent 0))
   `(with-poky
-    (setq bb-current-poky-directory bitbake-test/poky-path
-          bb-current-build-directory bitbake-test/build-path)
+    (setq bitbake-current-poky-directory bitbake-test/poky-path
+          bitbake-current-build-directory bitbake-test/build-path)
     (mkdir bitbake-test/build-path t)
     (unwind-protect
         (progn
@@ -68,15 +68,15 @@
   "Start bitbake server, evaluate BODY and stop server."
   (declare (indent 0))
   `(with-build
-    (bb-start-server bitbake-test/poky-path bitbake-test/build-path)
+    (bitbake-start-server bitbake-test/poky-path bitbake-test/build-path)
     (unwind-protect
         (progn ,@body)
-      (bb-stop-server))))
+      (bitbake-stop-server))))
 
-(defmacro with-bb-buffer (&rest body)
+(defmacro with-bitbake-buffer (&rest body)
   "Evaluate BODY in the bitbake buffer and kill it after."
   (declare (indent 0))
-  `(let ((buffer (bb-buffer)))
+  `(let ((buffer (bitbake-buffer)))
      (unwind-protect
          (with-current-buffer buffer
            ,@body)
@@ -84,7 +84,7 @@
          (setq kill-buffer-query-functions '())
          (kill-process (get-buffer-process buffer))
          (kill-buffer buffer)
-         (kill-buffer (bb-capture-buffer))))))
+         (kill-buffer (bitbake-capture-buffer))))))
 
 ;; Local Variables:
 ;; coding: utf-8

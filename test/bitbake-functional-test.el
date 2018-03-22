@@ -36,50 +36,50 @@
   (with-build
    (should (f-file? (f-join bitbake-test/build-path "conf" "local.conf")))))
 
-(ert-deftest bb-start-stop-server ()
+(ert-deftest bitbake-start-stop-server ()
   :tags '(functional)
   (let ((process))
     (with-server
-     (setq process (get-buffer-process (bb-buffer)))
+     (setq process (get-buffer-process (bitbake-buffer)))
      (should (getenv "BBSERVER"))
      (should process))
     (should (not (getenv "BBSERVER")))
     (should (not (process-live-p process)))
     (should (not (get-buffer "*bitbake*")))
-    (should (not bb-recipes-cache))))
+    (should (not bitbake-recipes-cache))))
 
-(ert-deftest bb-fetch-recipes/no-server ()
+(ert-deftest bitbake-fetch-recipes/no-server ()
   :tags '(functional)
   "Should raise an error."
-  (should-error (bb-fetch-recipes)))
+  (should-error (bitbake-fetch-recipes)))
 
-(ert-deftest bb-fetch-recipes/no-error ()
+(ert-deftest bitbake-fetch-recipes/no-error ()
   :tags '(functional)
   "Should fetch recipes."
   (with-server
-   (should (> (length (bb-fetch-recipes)) 500))))
+   (should (> (length (bitbake-fetch-recipes)) 500))))
 
-(ert-deftest bb-fetch-recipe-tasks/no-server ()
+(ert-deftest bitbake-fetch-recipe-tasks/no-server ()
   :tags '(functional)
   "Should raise an error."
-  (should-error (bb-fetch-recipes-tasks "busybox")))
+  (should-error (bitbake-fetch-recipes-tasks "busybox")))
 
-(ert-deftest bb-fetch-recipe-tasks/no-error ()
+(ert-deftest bitbake-fetch-recipe-tasks/no-error ()
   :tags '(functional)
   "Should fetch recipe tasks."
   (with-server
-   (should (> (length (bb-fetch-recipe-tasks "busybox")) 5))))
+   (should (> (length (bitbake-fetch-recipe-tasks "busybox")) 5))))
 
-(ert-deftest bb-fetch-recipe-variable/no-server ()
+(ert-deftest bitbake-fetch-recipe-variable/no-server ()
   :tags '(functional)
   "Should raise an error."
-  (should-error (bb-fetch-recipe-variables)))
+  (should-error (bitbake-fetch-recipe-variables)))
 
-(ert-deftest bb-fetch-recipe-variable/no-error ()
+(ert-deftest bitbake-fetch-recipe-variable/no-error ()
   :tags '(functional)
   "Should fetch recipe variable."
   (with-server
-   (should (assoc "FILES_busybox" (bb-fetch-recipe-variables "busybox")))))
+   (should (assoc "FILES_busybox" (bitbake-fetch-recipe-variables "busybox")))))
 
 (provide 'bitbake-functional-test)
 
