@@ -78,7 +78,8 @@ Thanks to
 
 - Lee Yen-Chin for helping me updating the code to support Melpa and
   publishing it,
-- Syohei Yoshida for small fixes.
+- Syohei Yoshida for small fixes,
+- Brian Malehorn for font-lock enhancement.
 
 ## License
 
