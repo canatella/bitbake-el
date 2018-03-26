@@ -753,8 +753,8 @@ For detail, see `comment-dwim'."
     :front "^\\(fakeroot *\\)?python *\\([a-zA-Z0-9_${}-]+\\) *( *) *{"
     :back "^}")))
 
-(mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\(append\\|class\\)\\'" 'bitbake-shell)
-(mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\(append\\|class\\)\\'" 'bitbake-python)
+(mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\(append\\|class\\)?\\'" 'bitbake-shell)
+(mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\(append\\|class\\)?\\'" 'bitbake-python)
 (add-to-list 'auto-mode-alist
              '("\\.bb\\(append\\|class\\)?\\'" . bitbake-mode))
 
