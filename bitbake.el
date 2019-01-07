@@ -48,6 +48,7 @@
 (require 'mmm-mode)
 (require 's)
 (require 'dash)
+(eval-when-compile (require 'cl-lib))
 
 ;;; User customizable variables
 (defgroup bitbake nil
