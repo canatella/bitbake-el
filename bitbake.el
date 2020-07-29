@@ -728,7 +728,7 @@ For detail, see `comment-dwim'."
   (interactive)
   (beginning-of-line)
   (if (looking-back "\\\\\n")
-      (indent-line-to default-tab-width)
+      (indent-line-to tab-width)
     (indent-line-to 0)))
 
 ;;;###autoload
