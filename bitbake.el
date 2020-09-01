@@ -769,12 +769,14 @@ For detail, see `comment-dwim'."
     :include-front t
     :back "\\(^[^[:space:]\n]\\)\\|\\'")))
 
-(mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\(append\\|class\\)?\\'" 'bitbake-shell)
-(mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\(append\\|class\\)?\\'" 'bitbake-python)
-(mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\(append\\|class\\)?\\'" 'bitbake-python-def)
+(defconst bitbake-mode-file-regex "\\.\\(bb\\(append\\|class\\)?\\|inc\\)\\'")
+
+(mmm-add-mode-ext-class 'bitbake-mode bitbake-mode-file-regex 'bitbake-shell)
+(mmm-add-mode-ext-class 'bitbake-mode bitbake-mode-file-regex 'bitbake-python)
+(mmm-add-mode-ext-class 'bitbake-mode bitbake-mode-file-regex 'bitbake-python-def)
 
 (add-to-list 'auto-mode-alist
-             '("\\.bb\\(append\\|class\\)?\\'" . bitbake-mode))
+             `(,bitbake-mode-file-regex . bitbake-mode))
 
 (provide 'bitbake)
 
