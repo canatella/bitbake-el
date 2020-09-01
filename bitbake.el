@@ -767,7 +767,7 @@ For detail, see `comment-dwim'."
     :case-fold-search nil
     :front ,bitbake-python-def-regex
     :include-front t
-    :back "^[^[:space:]\n]")))
+    :back "\\(^[^[:space:]\n]\\)\\|\\'")))
 
 (mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\(append\\|class\\)?\\'" 'bitbake-shell)
 (mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\(append\\|class\\)?\\'" 'bitbake-python)
