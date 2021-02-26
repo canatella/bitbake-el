@@ -728,7 +728,7 @@ For detail, see `comment-dwim'."
   (interactive)
   (beginning-of-line)
   (if (looking-back "\\\\\n")
-      (indent-line-to default-tab-width)
+      (indent-line-to tab-width)
     (indent-line-to 0)))
 
 ;;;###autoload
@@ -740,24 +740,43 @@ For detail, see `comment-dwim'."
   (set (make-local-variable 'indent-line-function) 'bitbake-indent-line)
   (define-key bitbake-mode-map [remap comment-dwim] 'bitbake-comment-dwim))
 
+(defconst bitbake-shell-regex "^\\(fakeroot[[:space:]]*\\)?\\([a-zA-Z0-9\-_+.${}/~]+\\)[[:space:]]*([[:space:]]*)[[:space:]]*{")
+(defconst bitbake-python-regex "^\\(fakeroot[[:space:]]*\\)?python[[:space:]]*\\([a-zA-Z0-9\-_+.${}/~]+\\)?[[:space:]]*([[:space:]]*)[[:space:]]*{")
+(defconst bitbake-python-def-regex "^def +[a-zA-Z0-9_]+[[:space:]]*([[:space:]a-zA-Z0-9_,=]*)[[:space:]]*:")
+
+(defun bitbake-shell-front-verify ()
+  (not (string-match bitbake-python-regex (match-string 0))))
+
 (mmm-add-classes
- '((bitbake-shell
+ `((bitbake-shell
     :submode shell-script-mode
     :delimiter-mode nil
     :case-fold-search nil
-    :front "^\\(fakeroot *\\)?\\([a-zA-Z0-9\-_+.${}/~]+\\) *( *) *{"
+    :front ,bitbake-shell-regex
+    :front-verify bitbake-shell-front-verify
     :back "^}")
    (bitbake-python
     :submode python-mode
     :delimiter-mode nil
     :case-fold-search nil
-    :front "^\\(fakeroot *\\)?python *\\([a-zA-Z0-9\-_+.${}/~]+\\) *( *) *{"
-    :back "^}")))
+    :front ,bitbake-python-regex
+    :back "^}")
+   (bitbake-python-def                  ; matches inline python defs from the def keyword down to the first non-empty non-indented line
+    :submode python-mode
+    :delimiter-mode nil
+    :case-fold-search nil
+    :front ,bitbake-python-def-regex
+    :include-front t
+    :back "\\(^[^[:space:]\n]\\)")))
 
-(mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\(append\\|class\\)?\\'" 'bitbake-shell)
-(mmm-add-mode-ext-class 'bitbake-mode "\\.bb\\(append\\|class\\)?\\'" 'bitbake-python)
+(defconst bitbake-mode-file-regex "\\.\\(bb\\(append\\|class\\)?\\|inc\\)\\'")
+
+(mmm-add-mode-ext-class 'bitbake-mode bitbake-mode-file-regex 'bitbake-shell)
+(mmm-add-mode-ext-class 'bitbake-mode bitbake-mode-file-regex 'bitbake-python)
+(mmm-add-mode-ext-class 'bitbake-mode bitbake-mode-file-regex 'bitbake-python-def)
+
 (add-to-list 'auto-mode-alist
-             '("\\.bb\\(append\\|class\\)?\\'" . bitbake-mode))
+             `(,bitbake-mode-file-regex . bitbake-mode))
 
 (provide 'bitbake)
 
