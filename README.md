@@ -1,4 +1,10 @@
+
+# Maintainer needed
+
+I've not used bitbake in a long time and I do not expect this to change soon. I don't have an environment to test new PRs so this project is not really maintained any more. If anybody who uses bitbake regularly wants to take over, just ask!
+
 # bitbake.el - Bitbake integration with emacs
+
 
 This package provides integration of the Yocto Bitbake tool with
 emacs. Its main features are:
