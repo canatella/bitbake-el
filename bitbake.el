@@ -383,12 +383,12 @@ If FETCH is non-nil, invalidate cache and fetch the tasks again."
   "Parse bitbake variables BUFFER."
   (with-current-buffer buffer
     (goto-char (point-min))
-    (re-search-forward "^[[:alnum:]_]+()[[:space:]]+{")
+    (re-search-forward "^[[:alnum:]_:]+()[[:space:]]+{")
     (beginning-of-line)
     (let ((limit (point))
           (variables))
       (goto-char (point-min))
-      (while (re-search-forward "^\\([[:alnum:]~+.${}/_-]+\\)=\"\\([^\"]*\\)" limit t)
+      (while (re-search-forward "^\\([[:alnum:]~+.${}/_:-]+\\)=\"\\([^\"]*\\)" limit t)
         (let ((name (substring-no-properties (match-string 1)))
               (value (substring-no-properties (match-string 2))))
           (while (equal (string (char-before)) "\\")
@@ -718,9 +718,9 @@ For detail, see `comment-dwim'."
      ;; fakeroot python do_foo() {
      ("\\b\\(include\\|require\\|inherit\\|python\\|addtask\\|export\\|fakeroot\\|unset\\)\\b" . font-lock-keyword-face)
      ;; do_install_append() {
-     ("^\\(fakeroot *\\)?\\(python *\\)?\\([a-zA-Z0-9\-_+.${}/~]+\\) *( *) *{" 3 font-lock-function-name-face)
+     ("^\\(fakeroot *\\)?\\(python *\\)?\\([a-zA-Z0-9\-_+.${}/~:]+\\) *( *) *{" 3 font-lock-function-name-face)
      ;; do_deploy[depends] ??=
-     ("^\\(export *\\)?\\([a-zA-Z0-9\-_+.${}/~]+\\(\\[[a-zA-Z0-9\-_+.${}/~]+\\]\\)?\\) *\\(=\\|\\?=\\|\\?\\?=\\|:=\\|+=\\|=+\\|.=\\|=.\\)" 2 font-lock-variable-name-face)
+     ("^\\(export *\\)?\\([a-zA-Z0-9\-_+.${}/~]+\\(\\[[a-zA-Z0-9\-_+.${}/~]+\\]\\)?\\(:[a-zA-Z0-9\-_+.${}/~]+\\)?\\) *\\(=\\|\\?=\\|\\?\\?=\\|:=\\|+=\\|=+\\|.=\\|=.\\)" 2 font-lock-variable-name-face)
      )))
 
 (defun bitbake-indent-line ()
@@ -740,8 +740,8 @@ For detail, see `comment-dwim'."
   (set (make-local-variable 'indent-line-function) 'bitbake-indent-line)
   (define-key bitbake-mode-map [remap comment-dwim] 'bitbake-comment-dwim))
 
-(defconst bitbake-shell-regex "^\\(fakeroot[[:space:]]*\\)?\\([a-zA-Z0-9\-_+.${}/~]+\\)[[:space:]]*([[:space:]]*)[[:space:]]*{")
-(defconst bitbake-python-regex "^\\(fakeroot[[:space:]]*\\)?python[[:space:]]*\\([a-zA-Z0-9\-_+.${}/~]+\\)?[[:space:]]*([[:space:]]*)[[:space:]]*{")
+(defconst bitbake-shell-regex "^\\(fakeroot[[:space:]]*\\)?\\([a-zA-Z0-9\-_+.${}/~:]+\\)[[:space:]]*([[:space:]]*)[[:space:]]*{")
+(defconst bitbake-python-regex "^\\(fakeroot[[:space:]]*\\)?python[[:space:]]*\\([a-zA-Z0-9\-_+.${}/~:]+\\)?[[:space:]]*([[:space:]]*)[[:space:]]*{")
 (defconst bitbake-python-def-regex "^def +[a-zA-Z0-9_]+[[:space:]]*([[:space:]a-zA-Z0-9_,=]*)[[:space:]]*:")
 
 (defun bitbake-shell-front-verify ()
