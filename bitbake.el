@@ -12,10 +12,10 @@
 ;;; Commentary:
 
 ;; This package provides integration of the Yocto Bitbake tool with
-;; emacs. Its main features are:
+;; Emacs.  Its main features are:
 ;;
 ;; - interacting with the bitbake script so that you can run bitbake
-;;   seamlessly from emacs. If your editing a recipe, recompiling is
+;;   seamlessly from Emacs.  If your editing a recipe, recompiling is
 ;;   just one M-x bitbake-recompile command away,
 ;; - deploying recipes output directly to your target device over ssh
 ;;   for direct testing (if your image supports read-write mode),
@@ -52,7 +52,7 @@
 
 ;;; User customizable variables
 (defgroup bitbake nil
-  "Run bitbake commands from emacs"
+  "Run bitbake commands from Emacs."
   :group 'processes)
 
 (defcustom bitbake-poky-directory "/opt/poky"
@@ -66,7 +66,8 @@
   :group 'bitbake)
 
 (defcustom bitbake-server-host nil
-  "The name or IP address to use as host address of the server process.  If set, the server accepts remote connections; otherwise it is local."
+  "The name or IP address to use as host address of the server process.
+If set, the server accepts remote connections; otherwise it is local."
   :type '(choice
           (string :tag "Name ro IP address")
           (const :tag "Local" nil))
@@ -76,7 +77,8 @@
 (put 'bitbake-server-host 'risky-local-variable t)
 
 (defcustom bitbake-server-port nil
-  "The port number that the server process should listen on.  A nil value means to use a random port number."
+  "The port number that the server process should listen on.
+A nil value means to use a random port number."
   :group 'bitbake
   :type '(choice
           (string :tag "Port number")
@@ -125,7 +127,7 @@ here.  Calling bitbake-flash will copy the hdd image on the usb disk if present.
 (defvar bitbake-current-command nil "The running command.")
 (defvar bitbake-last-disk-image nil "The last build disk image file.")
 (defvar bitbake-buffer-prompt "/////---bitbake$ " "The prompt used in the bitbake buffer.")
-(defvar bitbake-buffer-prompt-regexp (concat "^" (regexp-quote bitbake-buffer-prompt)) "A regexp matching the prompt")
+(defvar bitbake-buffer-prompt-regexp (concat "^" (regexp-quote bitbake-buffer-prompt)) "A regexp matching the prompt.")
 
 (make-variable-buffer-local 'bitbake-last-disk-image)
 
@@ -640,7 +642,7 @@ If FORCE is non-nil, force rebuild of image,"
 (defun bitbake-flash-image (wks image)
   "Create an hdd image using wic and flash it on bitbake-flash-device.
 
-The hdd image is based on WKS definition file and bitbake IMAGE, see bitbake-hdd-image."
+The hdd image is based on WKS definition file and bitbake IMAGE, see `bitbake-hdd-image'."
   (interactive (list (wic-read-definition-file)
                      (bitbake-read-image)))
   (bitbake-hdd-image wks image)
@@ -738,7 +740,10 @@ For detail, see `comment-dwim'."
   (setq font-lock-defaults bitbake-font-lock-defaults)
   (setq mode-name "BitBake")
   (set (make-local-variable 'indent-line-function) 'bitbake-indent-line)
-  (define-key bitbake-mode-map [remap comment-dwim] 'bitbake-comment-dwim))
+  (define-key bitbake-mode-map [remap comment-dwim] 'bitbake-comment-dwim)
+  (set (make-local-variable 'comment-start) "# ")
+  (set (make-local-variable 'comment-end) "")
+  )
 
 (defconst bitbake-shell-regex "^\\(fakeroot[[:space:]]*\\)?\\([a-zA-Z0-9\-_+.${}/~:]+\\)[[:space:]]*([[:space:]]*)[[:space:]]*{")
 (defconst bitbake-python-regex "^\\(fakeroot[[:space:]]*\\)?python[[:space:]]*\\([a-zA-Z0-9\-_+.${}/~:]+\\)?[[:space:]]*([[:space:]]*)[[:space:]]*{")
