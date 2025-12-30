@@ -734,7 +734,7 @@ For detail, see `comment-dwim'."
     (indent-line-to 0)))
 
 ;;;###autoload
-(define-derived-mode bitbake-mode fundamental-mode
+(define-derived-mode bitbake-mode prog-mode
   "A mode for editing bitbake recipe files."
   :syntax-table bitbake-syntax-table
   (setq font-lock-defaults bitbake-font-lock-defaults)
