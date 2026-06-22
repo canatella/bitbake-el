@@ -712,6 +712,31 @@ The hdd image is based on WKS definition file and bitbake IMAGE, see `bitbake-hd
       (message "Bitbake: copy image to %s" bitbake-flash-device)
       (bitbake-shell-command (format "dd if=%s of=%s bs=32M" bitbake-last-disk-image bitbake-flash-device)))))
 
+
+(defun bitbake-create-bbappend (recipe layer)
+  "Visit a .bbappend file for RECIPE in LAYER."
+  (interactive
+   (let ((recipe (bitbake-read-recipe)))
+     (list recipe
+           (bitbake-read-layer (format "Create %s.bbappend in layer: "
+                                       recipe)))))
+  (let* ((recipe-path (expand-file-name
+                       (bitbake-recipe-variable "FILE" recipe)))
+         (orig-layer (-find (lambda (l)
+                              (let ((local-path (cadr l)))
+                                (string-prefix-p local-path
+                                                 recipe-path)))
+                            (bitbake-layer-names)))
+         (bbappend-path (concat (file-remote-p bitbake-current-poky-directory)
+                                (cadr (assoc layer (bitbake-layer-names)))
+                                (file-name-directory
+                                 (string-remove-prefix (cadr orig-layer)
+                                                       recipe-path)))))
+    (make-directory bbappend-path t)
+    (find-file (file-name-concat bbappend-path
+                                 (format "%s_%%.bbappend"
+                                        recipe)))))
+
 ;;; bitbake-layers
 
 (defun bitbake-parse-layers (buffer)
