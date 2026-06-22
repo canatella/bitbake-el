@@ -164,6 +164,7 @@ Should be a format string with one '\\=%s' directive for a variable name."
 (defvar bitbake-last-disk-image nil "The last build disk image file.")
 (defvar bitbake-buffer-prompt "/////---bitbake$ " "The prompt used in the bitbake buffer.")
 (defvar bitbake-buffer-prompt-regexp (concat "^" (regexp-quote bitbake-buffer-prompt)) "A regexp matching the prompt.")
+(defvar bitbake-layers-cache nil "Cache of bitbake layers.")
 (defconst bitbake-load-base (file-name-directory load-file-name))
 (defconst bitbake-devshell-fragment "bitbake-el-devshell.conf"
   "Config fragment to use emacsclient in devshell command.")
@@ -280,7 +281,8 @@ binary and BUILD-DIRECTORY as the build directory."
   ;; cleanup caches
   (setq bitbake-recipes-cache '()
         bitbake-recipe-variables-cache '()
-        bitbake-recipe-tasks-cache '())
+        bitbake-recipe-tasks-cache '()
+        bitbake-layers-cache '())
 
   ;; prepare environment
   (setq bitbake-current-server-host (or bitbake-server-host "localhost")
@@ -308,6 +310,7 @@ binary and BUILD-DIRECTORY as the build directory."
   (setq bitbake-recipes-cache nil
         bitbake-recipe-variables-cache nil
         bitbake-recipe-tasks-cache nil
+        bitbake-layers-cache nil
         bitbake-current-server-host nil
         bitbake-current-server-port nil
         bitbake-current-poky-directory nil
@@ -708,6 +711,184 @@ The hdd image is based on WKS definition file and bitbake IMAGE, see `bitbake-hd
     (when (and (file-exists-p bitbake-flash-device) bitbake-last-disk-image)
       (message "Bitbake: copy image to %s" bitbake-flash-device)
       (bitbake-shell-command (format "dd if=%s of=%s bs=32M" bitbake-last-disk-image bitbake-flash-device)))))
+
+;;; bitbake-layers
+
+(defun bitbake-parse-layers (buffer)
+  "Parse the list of layers in BUFFER."
+  (with-current-buffer buffer
+    (unless (re-search-forward "^=+$" nil t)
+      (error "Unrecognized output from bitbake-layers"))
+    (forward-line -1)
+    (let* (layers
+           (headers (let ((l (buffer-substring-no-properties
+                              (line-beginning-position)
+                              (line-end-position))))
+                      (string-split l)))
+           (path-i (-find-index (lambda (h) (string= h "path"))
+                                headers)))
+      (forward-line 2)
+      (while (not (= (point) (point-max)))
+        (let ((l (string-split
+                  (buffer-substring-no-properties
+                   (line-beginning-position)
+                   (line-end-position)))))
+          (when (= (length l) (length headers))
+            ;; get rid of ../ and ./ path elements
+            (setf (nth path-i l)
+                  (expand-file-name (nth path-i l)))
+            (push l layers))
+          (forward-line 1)))
+      (cons headers (nreverse layers)))))
+
+(defun bitbake-fetch-layers ()
+  "Fetch the list of layers."
+  (message "Bitbake: fetching layers")
+  (bitbake-s-command (format "bitbake-layers show-layers 2>&1")
+                     "Unable to fetch layers")
+  (bitbake-parse-layers (bitbake-capture-buffer)))
+
+(defun bitbake-layer-names (&optional fetch)
+  "Return a list of bitbake layers.
+
+If FETCH is non-nil, invalidate cache and fetch the layers list again."
+  (when (or fetch (not bitbake-layers-cache))
+    (setq bitbake-layers-cache (bitbake-fetch-layers)))
+  bitbake-layers-cache)
+
+(defun bitbake-read-layer (&optional prompt default)
+  "Read the name of a Bitbake layer from the minibuffer with completion."
+  (completing-read prompt
+                   (mapcar #'car (bitbake-layer-names))
+                   nil
+                   t
+                   default
+                   'bitbake-layer-history))
+
+(defun bitbake-buffer-layer (&optional buffer)
+  "Return the name of the layer containing the recipe in BUFFER.
+
+Defaults to the current buffer."
+  (setq buffer (or buffer (current-buffer)))
+  (when-let* ((file (buffer-file-name buffer))
+              (layer (-find (lambda (l)
+                              (let ((local-path (cadr l)))
+                                (string-prefix-p local-path
+                                                 (string-remove-prefix
+                                                  (file-remote-p file)
+                                                  file))))
+                            (bitbake-layer-names))))
+    (car layer)))
+
+(defun bitbake-add-layer (path &optional name)
+  "Add PATH as a layer to the bitbake repo.
+
+With a prefix arg, prompt for the layer name, defaulting to basename of PATH."
+  (interactive
+   (list (read-directory-name "New layer: "
+                              (file-name-parent-directory
+                               bitbake-current-poky-directory))))
+  (unless name
+    (setq name
+          (if current-prefix-arg
+              (read-string "Layer name: ")
+            (file-name-base path))))
+  (let* ((full-path (expand-file-name path))
+         (local-path (if (file-remote-p bitbake-current-poky-directory)
+                         (string-remove-prefix
+                          (file-remote-p bitbake-current-poky-directory)
+                          full-path)
+                       full-path)))
+    (unless (file-exists-p full-path)
+      (message "bitbake-add-layer: Layer directory %s does not exist; creating it"
+               full-path)
+      (bitbake-s-command (format "bitbake-layers create-layer -i %s %s 2>&1"
+                                 (shell-quote-argument name)
+                                 (shell-quote-argument
+                                  local-path))
+                         "Error creating layer"))
+    (bitbake-s-command (format "bitbake-layers add-layer %s 2>&1"
+                               (shell-quote-argument
+                                local-path))
+                       "Unable to add layer"))
+  (with-current-buffer "*bitbake-layers*"
+    (tabulated-list-revert)))
+
+(defun bitbake-remove-layer (layer)
+  "Remove LAYER from the bitbake repo."
+  (interactive
+   (let ((default (and (eq major-mode 'bitbake-layers-mode)
+                       (tabulated-list-get-entry))))
+     (list (bitbake-read-layer "Remove layer: "
+                               (and default
+                                    (aref default 0))))))
+  (pcase (assoc layer bitbake-layers-cache #'equal)
+    (`(,_ ,path ,_priority)
+     (bitbake-s-command (format "bitbake-layers remove-layer %s 2>&1"
+                                (shell-quote-argument path))
+                        "Unable to remove layer")
+     (let ((remote-path (concat (file-remote-p bitbake-current-poky-directory)
+                                path)))
+       (when (yes-or-no-p (format "Delete %s?" remote-path))
+         (delete-directory remote-path t)))
+     (with-current-buffer "*bitbake-layers*"
+       (tabulated-list-revert)))))
+
+(defun bitbake--format-layer (l)
+  (pcase-let ((`(,name ,path ,priority) l))
+    (vector name
+            (list path
+                  'bitbake-layer-path (concat (file-remote-p bitbake-current-poky-directory)
+                                              path)
+                  'action 'bitbake--find-layer
+                  'help-echo (format "Open %s" path))
+            priority)))
+
+(defun bitbake--find-layer (button)
+  (find-file (button-get button 'bitbake-layer-path)))
+
+(defun bitbake-layers-refresh ()
+  "Refresh the contents of \"*bitbake-layers*\" buffer."
+  (let* ((layers (bitbake-layer-names t))
+         (headers (car layers))
+         (rows (cdr layers))
+         (widths (mapcar (lambda (col)
+                           (seq-reduce (lambda (max-width x)
+                                         (max max-width (length x)))
+                                       col
+                                       0))
+                         (apply '-zip-lists rows))))
+    (setq tabulated-list-entries
+          (mapcar (lambda (l)
+                    (list (car l)
+                          (bitbake--format-layer l)))
+                  rows)
+          tabulated-list-sort-key '("priority" . t)
+          tabulated-list-format (vconcat
+                                 (cl-mapcar (lambda (label width)
+                                              (list label width #'value<))
+                                            headers
+                                            widths)))))
+
+(defvar-keymap bitbake-layers-mode-map
+  "a" 'bitbake-add-layer
+  "d" 'bitbake-remove-layer)
+
+(define-derived-mode bitbake-layers-mode tabulated-list-mode "Bitbake Layers"
+  :interactive nil
+  "Major mode for displaying the output of bitbake-layers.
+\\<bitbake-layers-mode-map>"
+  (add-hook 'tabulated-list-revert-hook #'bitbake-layers-refresh nil t)
+  (bitbake-layers-refresh)
+  (tabulated-list-init-header))
+
+;;;###autoload
+(defun bitbake-layers ()
+  "List all layers installed in the current Bitbake repo."
+  (interactive)
+  (pop-to-buffer "*bitbake-layers*")
+  (bitbake-layers-mode)
+  (tabulated-list-print))
 
 ;;; devshell backend.
 
