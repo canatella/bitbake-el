@@ -60,6 +60,11 @@ There is also a minor mode which provides shortcut and menu for those
 commands, run `M-x bitbake-minor-mode` and look at the BitBake menu
 for commands and key strokes.
 
+### Bitbake layers mode
+
+`M-x bitbake-layers` shows all configured layers. Add a new layer with
+`a`; remove a layer with `d`.
+
 ### Bitbake recipe mode
 
 Finally, you should get syntax highlighting when editing bitbake
@@ -68,6 +73,9 @@ in tasks.
 
 `C-c C-f` in `bitbake-mode` looks up Yocto documentation for a given
 variable with `browse-url`.
+
+`M-x bitbake-create-bbappend` opens a `.bbappend` file for a recipe in
+a layer of your choice.
 
 ## Development
 
