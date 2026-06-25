@@ -45,7 +45,7 @@
 
 (require 'ansi-color)
 (require 'comint)
-(require 'mmm-mode)
+(require 'polymode)
 (require 's)
 (require 'dash)
 
@@ -766,7 +766,7 @@ customize `bitbake-devshell-function'."
 ;;; Mode definition
 
 ;;;###autoload
-(defvar bitbake-minor-mode-map nil "Keymap for bitbake-mode.")
+(defvar bitbake-minor-mode-map nil "Keymap for bitbake-host-mode.")
 
 (setq bitbake-minor-mode-map nil)
 (when (not bitbake-minor-mode-map)
@@ -825,7 +825,7 @@ For detail, see `comment-dwim'."
     (modify-syntax-entry ?# "< b" table)
     (modify-syntax-entry ?\n "> b" table)
     table)
-  "Syntax table used in `bitbake-mode'.")
+  "Syntax table used in `bitbake-host-mode'.")
 
 (defvar bitbake-font-lock-defaults
   `((;; addtask x before y after z
@@ -879,14 +879,14 @@ To use a specific version of the reference manual, customize `bitbake-yocto-manu
     (browse-url (format bitbake-yocto-manual-url variable))))
 
 ;;;###autoload
-(define-derived-mode bitbake-mode prog-mode
+(define-derived-mode bitbake-host-mode prog-mode
   "A mode for editing bitbake recipe files."
   :syntax-table bitbake-syntax-table
   (setq font-lock-defaults bitbake-font-lock-defaults)
   (setq mode-name "BitBake")
   (set (make-local-variable 'indent-line-function) 'bitbake-indent-line)
-  (define-key bitbake-mode-map [remap comment-dwim] 'bitbake-comment-dwim)
-  (define-key bitbake-mode-map [(control c) (control f)] 'bitbake-browse-variable-documentation)
+  (define-key bitbake-host-mode-map [remap comment-dwim] 'bitbake-comment-dwim)
+  (define-key bitbake-host-mode-map [(control c) (control f)] 'bitbake-browse-variable-documentation)
   (set (make-local-variable 'comment-start) "# ")
   (set (make-local-variable 'comment-end) "")
   )
@@ -895,36 +895,44 @@ To use a specific version of the reference manual, customize `bitbake-yocto-manu
 (defconst bitbake-python-regex "^\\(fakeroot[[:space:]]*\\)?python[[:space:]]*\\([a-zA-Z0-9\-_+.${}/~:]+\\)?[[:space:]]*([[:space:]]*)[[:space:]]*{")
 (defconst bitbake-python-def-regex "^def +[a-zA-Z0-9_]+[[:space:]]*([[:space:]a-zA-Z0-9_,=]*)[[:space:]]*:")
 
-(defun bitbake-shell-front-verify ()
-  (not (string-match bitbake-python-regex (match-string 0))))
-
-(mmm-add-classes
- `((bitbake-shell
-    :submode shell-script-mode
-    :delimiter-mode nil
-    :case-fold-search nil
-    :front ,bitbake-shell-regex
-    :front-verify bitbake-shell-front-verify
-    :back "^}")
-   (bitbake-python
-    :submode python-mode
-    :delimiter-mode nil
-    :case-fold-search nil
-    :front ,bitbake-python-regex
-    :back "^}")
-   (bitbake-python-def                  ; matches inline python defs from the def keyword down to the first non-empty non-indented line
-    :submode python-mode
-    :delimiter-mode nil
-    :case-fold-search nil
-    :front ,bitbake-python-def-regex
-    :include-front t
-    :back "\\(^[^[:space:]\n]\\|\\'\\)")))
-
 (defconst bitbake-mode-file-regex "\\.\\(bb\\(append\\|class\\)?\\|inc\\)\\'")
 
-(mmm-add-mode-ext-class 'bitbake-mode bitbake-mode-file-regex 'bitbake-shell)
-(mmm-add-mode-ext-class 'bitbake-mode bitbake-mode-file-regex 'bitbake-python)
-(mmm-add-mode-ext-class 'bitbake-mode bitbake-mode-file-regex 'bitbake-python-def)
+(define-hostmode poly-bitbake-hostmode
+  :name "bitbake"
+  :mode 'bitbake-host-mode)
+
+(define-innermode poly-bitbake-python-def-innermode
+  :name "bitbake-python-def"
+  :mode 'python-mode
+  :head-mode 'body
+  :head-matcher bitbake-python-def-regex
+  :tail-matcher (cons "\\(\n\\)\\(^[^[:space:]\n]\\|\\'\\)" 1))
+
+(define-innermode poly-bitbake-python-kw-innermode
+  :name "bitbake-python-kw"
+  :mode 'python-mode
+  ; head and tail are not part of the body and an extra indentation
+  ; level is needed
+  :body-indent-offset 4
+  :head-mode 'host
+  :head-matcher bitbake-python-regex
+  :tail-matcher "^}"
+  :tail-mode 'host)
+
+(define-innermode poly-bitbake-shell-innermode
+  :name "bitbake-shell"
+  :mode 'sh-mode
+  :head-mode 'body
+  :head-matcher bitbake-shell-regex
+  :tail-matcher "^}")
+
+(define-polymode bitbake-mode
+  :hostmode 'poly-bitbake-hostmode
+  ; NOTE: order matters; modes with most specific matchers are put first
+  :innermodes '(poly-bitbake-python-def-innermode
+                poly-bitbake-python-kw-innermode
+                poly-bitbake-shell-innermode)
+  :keymap bitbake-host-mode-map)
 
 (add-to-list 'auto-mode-alist
              `(,bitbake-mode-file-regex . bitbake-mode))
