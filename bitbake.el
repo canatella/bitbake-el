@@ -893,7 +893,7 @@ To use a specific version of the reference manual, customize `bitbake-yocto-manu
 
 (defconst bitbake-shell-regex "^\\(fakeroot[[:space:]]*\\)?\\([a-zA-Z0-9\-_+.${}/~:]+\\)[[:space:]]*([[:space:]]*)[[:space:]]*{")
 (defconst bitbake-python-regex "^\\(fakeroot[[:space:]]*\\)?python[[:space:]]*\\([a-zA-Z0-9\-_+.${}/~:]+\\)?[[:space:]]*([[:space:]]*)[[:space:]]*{")
-(defconst bitbake-python-def-regex "^def +[a-zA-Z0-9_]+[[:space:]]*([[:space:]a-zA-Z0-9_,=]*)[[:space:]]*:")
+(defconst bitbake-python-def-regex "^def +[a-zA-Z0-9_]+[[:space:]]*([^)]*):")
 
 (defconst bitbake-mode-file-regex "\\.\\(bb\\(append\\|class\\)?\\|inc\\)\\'")
 
