@@ -381,18 +381,22 @@ If FETCH is non-nil, invalidate cache and fetch the recipes list again."
   "Return a recipe name for the current buffer or BUFFER if given."
   (setq buffer (or buffer (current-buffer)))
   (when (stringp (buffer-file-name buffer))
-    (let ((bitbake-directory (locate-dominating-file (buffer-file-name buffer)
-                                                (lambda (dir)
-                                                  (and (file-directory-p dir)
-                                                       (directory-files dir t "\\.bb\\(append\\)?\\'"))))))
-      (when bitbake-directory
-        (let ((bitbake-file (car (directory-files bitbake-directory t "[^/_]+\\(_[^_]+\\)?\\.bb\\(append\\)?\\'"))))
-          (with-temp-buffer
-            (goto-char (point-min))
-            (insert bitbake-file)
-            (goto-char (point-min))
-            (if (re-search-forward "\\([^/_]+\\)\\(_[^_]+\\)?\\.bb\\(append\\)?\\'" nil t)
-                (match-string 1))))))))
+    (if (string-match "\\([^/_]+\\)\\(_[^_]+\\)?\\.bb\\(append\\)?\\'"
+                      (buffer-file-name buffer))
+        (match-string 1
+                      (buffer-file-name buffer))
+      (let ((bitbake-directory (locate-dominating-file (buffer-file-name buffer)
+                                                       (lambda (dir)
+                                                         (and (file-directory-p dir)
+                                                             (directory-files dir t "\\.bb\\(append\\)?\\'"))))))
+        (when bitbake-directory
+          (let ((bitbake-file (car (directory-files bitbake-directory t "[^/_]+\\(_[^_]+\\)?\\.bb\\(append\\)?\\'"))))
+            (with-temp-buffer
+              (goto-char (point-min))
+              (insert bitbake-file)
+              (goto-char (point-min))
+              (if (re-search-forward "\\([^/_]+\\)\\(_[^_]+\\)?\\.bb\\(append\\)?\\'" nil t)
+                  (match-string 1)))))))))
 
 (defun bitbake-read-recipe ()
   "Read a recipe name in the minibuffer, with completion."
