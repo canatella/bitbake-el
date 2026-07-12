@@ -1145,6 +1145,12 @@ To use a specific version of the reference manual, customize `bitbake-yocto-manu
                 poly-bitbake-shell-innermode)
   :keymap bitbake-host-mode-map)
 
+;; For compatibility with pre-polymode versions, and also because it's
+;; the obvious name.
+(defvaralias 'bitbake-mode-hook 'bitbake-host-mode-hook
+  "Hook run after entering `bitbake-mode'.
+Use this instead of `bitbake-host-mode-hook'.")
+
 (add-to-list 'auto-mode-alist
              `(,bitbake-mode-file-regex . bitbake-mode))
 
