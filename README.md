@@ -14,7 +14,8 @@ emacs. Its main features are:
 
 * a global minor mode providing menu and shortcuts,
 
-* an mmm based mode to edit bitbake recipes.
+* a major mode for editing recipes, using `polymode` to support Python
+  and shell syntax.
 
 ## Installing
 
@@ -68,7 +69,7 @@ for commands and key strokes.
 ### Bitbake recipe mode
 
 Finally, you should get syntax highlighting when editing bitbake
-recipe files. It uses `mmm-mode` to provide python and shell support
+recipe files. It uses `polymode` to provide python and shell support
 in tasks.
 
 `C-c C-f` in `bitbake-mode` looks up Yocto documentation for a given

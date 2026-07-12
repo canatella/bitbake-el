@@ -7,7 +7,7 @@
 ;;(files "bitbake-mode.el")
 
 (development
- (depends-on "mmm-mode" :git "https://github.com/purcell/mmm-mode")
+ (depends-on "polymode" :git "https://github.com/polymode/polymode")
  (depends-on "s")
  (depends-on "dash")
  (depends-on "f")

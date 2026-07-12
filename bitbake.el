@@ -5,7 +5,7 @@
 ;; Created: 2014-02-11
 ;; Keywords: convenience
 ;; Version: 0.1
-;; Package-Requires: ((emacs "24.1") (dash "2.6.0") (mmm-mode "0.5.4") (s "1.10.0"))
+;; Package-Requires: ((emacs "25") (dash "2.6.0") (polymode "20260505.1803") (s "1.10.0"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -21,7 +21,8 @@
 ;;   for direct testing (if your image supports read-write mode),
 ;; - generating wic images,
 ;; - a global minor mode providing menu and shortcuts,
-;; - an mmm based mode to edit bitbake recipes.
+;; - a major mode for editing recipes, using `polymode' to support
+;;   Python and shell syntax.
 
 
 ;;; License:
