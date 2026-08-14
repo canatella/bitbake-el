@@ -1138,6 +1138,11 @@ To use a specific version of the reference manual, customize `bitbake-yocto-manu
   :tail-matcher "^}")
 
 (define-polymode bitbake-poly-mode
+  nil
+  "Polymode for editing Bitbake source files.
+
+Customizations should be added to the underyling `bitbake-mode', but
+this is what should match file names in `auto-mode-alist'."
   :hostmode 'poly-bitbake-hostmode
   ; NOTE: order matters; modes with most specific matchers are put first
   :innermodes '(poly-bitbake-python-def-innermode
