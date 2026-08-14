@@ -977,7 +977,7 @@ customize `bitbake-devshell-function'."
 ;;; Mode definition
 
 ;;;###autoload
-(defvar bitbake-minor-mode-map nil "Keymap for bitbake-host-mode.")
+(defvar bitbake-minor-mode-map nil "Keymap for bitbake-mode.")
 
 (setq bitbake-minor-mode-map nil)
 (when (not bitbake-minor-mode-map)
@@ -1036,7 +1036,7 @@ For detail, see `comment-dwim'."
     (modify-syntax-entry ?# "< b" table)
     (modify-syntax-entry ?\n "> b" table)
     table)
-  "Syntax table used in `bitbake-host-mode'.")
+  "Syntax table used in `bitbake-mode'.")
 
 (defvar bitbake-font-lock-defaults
   `((;; addtask x before y after z
@@ -1090,14 +1090,14 @@ To use a specific version of the reference manual, customize `bitbake-yocto-manu
     (browse-url (format bitbake-yocto-manual-url variable))))
 
 ;;;###autoload
-(define-derived-mode bitbake-host-mode prog-mode
+(define-derived-mode bitbake-mode prog-mode
   "A mode for editing bitbake recipe files."
   :syntax-table bitbake-syntax-table
   (setq font-lock-defaults bitbake-font-lock-defaults)
   (setq mode-name "BitBake")
   (set (make-local-variable 'indent-line-function) 'bitbake-indent-line)
-  (define-key bitbake-host-mode-map [remap comment-dwim] 'bitbake-comment-dwim)
-  (define-key bitbake-host-mode-map [(control c) (control f)] 'bitbake-browse-variable-documentation)
+  (define-key bitbake-mode-map [remap comment-dwim] 'bitbake-comment-dwim)
+  (define-key bitbake-mode-map [(control c) (control f)] 'bitbake-browse-variable-documentation)
   (set (make-local-variable 'comment-start) "# ")
   (set (make-local-variable 'comment-end) "")
   )
@@ -1110,7 +1110,7 @@ To use a specific version of the reference manual, customize `bitbake-yocto-manu
 
 (define-hostmode poly-bitbake-hostmode
   :name "bitbake"
-  :mode 'bitbake-host-mode)
+  :mode 'bitbake-mode)
 
 (define-innermode poly-bitbake-python-def-innermode
   :name "bitbake-python-def"
@@ -1137,22 +1137,16 @@ To use a specific version of the reference manual, customize `bitbake-yocto-manu
   :head-matcher bitbake-shell-regex
   :tail-matcher "^}")
 
-(define-polymode bitbake-mode
+(define-polymode bitbake-poly-mode
   :hostmode 'poly-bitbake-hostmode
   ; NOTE: order matters; modes with most specific matchers are put first
   :innermodes '(poly-bitbake-python-def-innermode
                 poly-bitbake-python-kw-innermode
                 poly-bitbake-shell-innermode)
-  :keymap bitbake-host-mode-map)
-
-;; For compatibility with pre-polymode versions, and also because it's
-;; the obvious name.
-(defvaralias 'bitbake-mode-hook 'bitbake-host-mode-hook
-  "Hook run after entering `bitbake-mode'.
-Use this instead of `bitbake-host-mode-hook'.")
+  :keymap bitbake-mode-map)
 
 (add-to-list 'auto-mode-alist
-             `(,bitbake-mode-file-regex . bitbake-mode))
+             `(,bitbake-mode-file-regex . bitbake-poly-mode))
 
 (provide 'bitbake)
 
